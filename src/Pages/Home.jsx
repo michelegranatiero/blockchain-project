@@ -2,8 +2,9 @@ function Home() {
   return (
     <main>
       <section className="">
-        aa
+        Home
       </section>
+      
 
       {/* <section>
         <h1></h1>
