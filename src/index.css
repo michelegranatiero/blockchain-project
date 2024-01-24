@@ -1,193 +1,76 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Open+Sans&family=Quicksand&display=swap');
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+ 
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 240 10% 3.9%;
 
-/* RESET */
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-}
+    --card: 0 0% 100%;
+    --card-foreground: 240 10% 3.9%;
+ 
+    --popover: 0 0% 100%;
+    --popover-foreground: 240 10% 3.9%;
+ 
+    --primary: 240 5.9% 10%;
+    --primary-foreground: 0 0% 98%;
+ 
+    --secondary: 240 4.8% 95.9%;
+    --secondary-foreground: 240 5.9% 10%;
+ 
+    --muted: 240 4.8% 95.9%;
+    --muted-foreground: 240 3.8% 46.1%;
+ 
+    --accent: 240 4.8% 95.9%;
+    --accent-foreground: 240 5.9% 10%;
+ 
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
 
-a {
-  text-decoration: none;
-  color: inherit;
-}
-
-ul {
-  list-style: none;
-}
-
-/* BASE STYLES */
-body {
-  background-color: #e8f0f7;
-  font-family: 'Inter', sans-serif;
-}
-
-#root{
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  padding-top: 60px;
-}
-
-/* NORMAL STYLES */
-.header {
-  background-color: rgb(19, 22, 26);
-  color: white;
-  position: fixed;
-  width: 100%;
-  top: 0;
-}
-
-.header__content {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  min-height: 60px;
-  max-width: 1200px;
-  padding: 0 30px;
-  margin: 0 auto;
-}
-
-.logo {
-}
-
-.logo__img {
-  height: 20px;
-  display: block;
-}
-
-.nav {
-
-}
-
-.nav__list {
-  display: flex;
-  column-gap: 40px;
-}
-
-.nav__item {
-
-}
-
-.nav__link {
-  color: rgba(255, 255, 255, 0.75);
-  font-size: 15px;
-  transition: all 0.4s;
-  position: relative;
-}
-
-.nav__link:hover,
-.nav__link:focus {
-  color: rgba(255, 255, 255, 1);
-}
-
-.nav__link::after {
-  content: '';
-  height: 2px;
-  width: 100%;
-  background-color: rgb(0, 183, 255);
-  position: absolute;
-  left: 0;
-  bottom: -8px;
-  transition: all 0.2s;
-  opacity: 0;
-  pointer-events: none;
-}
-
-.nav__link:hover::after {
-  opacity: 1;
-}
-
-.btn {
-  color: #fff;
-  padding: 7px 18px;
-  border-radius: 1000px;
-  text-transform: uppercase;
-  font-size: 12px;
-  font-weight: 500;
-  transition: all 0.2s;
-}
-
-.btn:hover {
-  background-color: rgb(28, 128, 228);
-}
-
-.footer{
-  margin-top: auto;
-  background-color: rgb(19, 22, 26);
-  color: white;
-  width: 100%;
-}
-
-.footer__content {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 60px;
-  max-width: 1200px;
-  padding: 0 30px;
-  margin: 0 auto;
-}
-
-.footer__list {
-  display: flex;
-  column-gap: 40px;
-}
-
-.footer__item {
-
-}
-
-.footer__link {
-  color: rgba(255, 255, 255, 0.75);
-  font-size: 15px;
-  transition: all 0.4s;
-  position: relative;
-}
-
-
-
-
-main{
-  flex-grow: 1;
-  min-height:max-content;
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-/* MEDIA QUERIES */
-@media (max-width: 650px) {
-  #root{
-    padding-top: 116px;
+    --border: 240 5.9% 90%;
+    --input: 240 5.9% 90%;
+    --ring: 240 10% 3.9%;
+ 
+    --radius: 0.5rem;
   }
-  .header__content {
-    flex-direction: column;
-    align-items: center;
-    padding: 25px 0;
-    row-gap: 18px;
+ 
+  .dark {
+    --background: 240 10% 3.9%;
+    --foreground: 0 0% 98%;
+ 
+    --card: 240 10% 3.9%;
+    --card-foreground: 0 0% 98%;
+ 
+    --popover: 240 10% 3.9%;
+    --popover-foreground: 0 0% 98%;
+ 
+    --primary: 0 0% 98%;
+    --primary-foreground: 240 5.9% 10%;
+ 
+    --secondary: 240 3.7% 15.9%;
+    --secondary-foreground: 0 0% 98%;
+ 
+    --muted: 240 3.7% 15.9%;
+    --muted-foreground: 240 5% 64.9%;
+ 
+    --accent: 240 3.7% 15.9%;
+    --accent-foreground: 0 0% 98%;
+ 
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 0 0% 98%;
+ 
+    --border: 240 3.7% 15.9%;
+    --input: 240 3.7% 15.9%;
+    --ring: 240 4.9% 83.9%;
   }
-
-  .nav__list {
-    column-gap: 20px;
+}
+ 
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
   }
 }
