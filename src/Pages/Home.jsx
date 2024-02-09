@@ -30,7 +30,7 @@ function Home() {
   return (
     <>
       <InfoBar pageName="Tasks"/>
-      <div className="md:flex md:items-start">
+      <div className="flex flex-col  md:flex-row md:items-start">
         <Filters />
         <section className="flex flex-col gap-y-4 p-4 h-full">
           {tasks.length > 0 ?

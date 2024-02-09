@@ -1,5 +1,6 @@
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 import { useEffect, useState } from "react"
+import FilterDrawer from "./FilterDrawer"
 
 function Filters() {
 
@@ -11,6 +12,9 @@ function Filters() {
 
   return (
     <>
+      <div className="px-4 md:hidden">
+        <FilterDrawer />
+      </div>
       <aside className="p-4 text-zinc-600 sticky top-10 hidden md:block">
         <div className="flex flex-col gap-y-4 p-4 whitespace-nowrap rounded-lg">
           <h3 className="mt-4 pb-2 text-lg font-medium leading-none border-b-2">
