@@ -10,7 +10,7 @@ function RootLayout() {
       <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
         <Header />
         <Container className="flex min-h-full grow">
-          <main className="m-4 w-full space-y-2 overflow-hidden sm:m-6 lg:m-8">
+          <main className="m-4 w-full space-y-2 sm:m-6 lg:m-8">
             <Outlet />
           </main>
         </Container>
