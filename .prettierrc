@@ -3,5 +3,5 @@
   "bracketSameLine": true,
   "printWidth": 80,
   "reactSnippets.settings.prettierEnabled": true,
-  "singleAttributePerLine": true
+  "singleAttributePerLine": false
 }

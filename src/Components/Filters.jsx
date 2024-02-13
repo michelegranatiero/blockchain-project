@@ -2,7 +2,7 @@ import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 import { useEffect, useState } from "react"
 import FilterDrawer from "./FilterDrawer"
 
-function Filters() {
+function Filters({className = ""}) {
 
   const [filter, setFilter] = useState(["in progress", "pending"]);
 
@@ -11,18 +11,18 @@ function Filters() {
   }, [filter]);
 
   return (
-    <>
+    <ToggleGroup type="multiple" variant="outline" defaultValue={filter} 
+      onValueChange={(value) => setFilter(value)}
+      className={`flex-col self-stretch justify-start items-start ${className}`}>
       <div className="px-4 md:hidden">
         <FilterDrawer />
       </div>
-      <aside className="p-4 text-zinc-600 sticky top-10 hidden md:block">
-        <div className="flex flex-col gap-y-4 p-4 whitespace-nowrap rounded-lg">
+      <aside className="p-4 text-zinc-600  hidden md:flex flex-col gap-y-4 whitespace-nowrap sticky top-14 ">
           <h3 className="mt-4 pb-2 text-lg font-medium leading-none border-b-2">
             Filters
           </h3>
-          <ToggleGroup type="multiple" variant="outline" defaultValue={filter} 
-            onValueChange={(value) => setFilter(value)}
-            className="flex flex-col items-stretch">
+          <div
+            className="flex flex-col items-stretch gap-1">
             <h4 className="mb-2 text-sm font-medium leading-none">State</h4>
             <ToggleGroupItem value="completed" aria-label="Toggle completed">
               <span>completed</span>
@@ -36,10 +36,9 @@ function Filters() {
             <ToggleGroupItem value="canceled" aria-label="Toggle canceled">
             <span>canceled</span>
             </ToggleGroupItem>
-          </ToggleGroup>
-          <ToggleGroup type="multiple" variant="outline" defaultValue={filter} 
-            onValueChange={(value) => setFilter(value)}
-            className="flex flex-col items-stretch">
+          </div>
+          <div
+            className="flex flex-col items-stretch gap-1">
             <h4 className="mb-2 text-sm font-medium leading-none">My Role</h4>
             <ToggleGroupItem value="issuer" aria-label="Toggle issuer">
               <span>issuer</span>
@@ -50,12 +49,11 @@ function Filters() {
             <ToggleGroupItem value="worker" aria-label="Toggle worker">
             <span>worker</span>
             </ToggleGroupItem>
-          </ToggleGroup>
-        </div>
+          </div>
         
       </aside>
       
-    </>
+    </ToggleGroup>
   )
 }
 

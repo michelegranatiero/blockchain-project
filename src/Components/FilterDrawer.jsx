@@ -14,7 +14,7 @@ import {
 function FilterDrawer() {
   return (
     <Drawer>
-      <DrawerTrigger>
+      <DrawerTrigger asChild>
         <Button variant="outline">Filters</Button>
       </DrawerTrigger>
       <DrawerContent>
@@ -24,7 +24,7 @@ function FilterDrawer() {
         </DrawerHeader>
         <DrawerFooter>
           <Button>Submit</Button>
-          <DrawerClose>
+          <DrawerClose asChild>
             <Button variant="outline">Cancel</Button>
           </DrawerClose>
         </DrawerFooter>
