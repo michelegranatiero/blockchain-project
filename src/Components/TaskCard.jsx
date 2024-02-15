@@ -43,7 +43,7 @@ function TaskCard({ id, title, description, content }) {
           </div>
           <div className="flex justify-around gap-3 p-6 sm:flex-col">
             <Button onClick={(e) => navigateStopPropagation(e, "/mytasks")}>
-              Found
+              Fund
             </Button>
             <Button onClick={(e) => navigateStopPropagation(e, "/mytasks")}>
               Work

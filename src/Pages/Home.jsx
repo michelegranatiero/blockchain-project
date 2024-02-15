@@ -1,5 +1,6 @@
 import InfoBar from "@/Components/InfoBar";
 import TaskCard from "@/Components/TaskCard";
+import Filters from "@/Components/Filters";
 
 const tasks = [
   {
@@ -29,17 +30,23 @@ function Home() {
   return (
     <>
       <InfoBar pageName="Tasks"/>
-      <section className="flex flex-col gap-y-4 rounded-lg p-4">
-        {tasks.map((task) => (
-          <TaskCard
-            key={task.id}
-            id={task.id}
-            title={task.title}
-            description={task.description}
-            content={task.content}
-          />
-        ))}
-      </section>
+      <div className="flex flex-col  md:flex-row md:items-start">
+        <Filters />
+        <section className="flex flex-col gap-y-4 p-4 h-full">
+          {tasks.length > 0 ?
+            tasks.map((task) => (
+              <TaskCard
+                key={task.id}
+                id={task.id}
+                title={task.title}
+                description={task.description}
+                content={task.content}
+              />
+            ))
+          : <h1 className="text-xl m-auto">No tasks found :&#40;</h1> }
+        </section>
+      </div>
+      
     </>
   );
 }

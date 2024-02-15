@@ -12,7 +12,7 @@ function Task() {
         <p>descrizione</p>
         <p className="grow">info</p>
         <div className="flex gap-3 justify-end">
-          <Button>Found</Button>
+          <Button>Fund</Button>
           <Button>Work</Button>
         </div>
 
