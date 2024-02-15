@@ -7,13 +7,12 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { useMetaMask } from '../../hooks/useMetaMask'
+import  { formatAddress } from '../../utils'
 
 function ProfileButton() {
 
-  function login() {
-    console.log("login");
-  }
-
+  const { wallet, hasProvider, isConnecting, connectMetaMask, disconnectMetaMask } = useMetaMask()
 
   return (
     <DropdownMenu>
@@ -24,15 +23,15 @@ function ProfileButton() {
         </Avatar>
       </DropdownMenuTrigger>
       <DropdownMenuContent>
-        <DropdownMenuLabel>My Account</DropdownMenuLabel>
-        <DropdownMenuSeparator />
-        {/* <DropdownMenuItem className="cursor-pointer">Profile</DropdownMenuItem>
-        <DropdownMenuItem className="cursor-pointer">Billing</DropdownMenuItem>
-        <DropdownMenuItem className="cursor-pointer">Subscription</DropdownMenuItem>
-        <DropdownMenuSeparator /> */}
-        <DropdownMenuItem className="cursor-pointer">Log Out</DropdownMenuItem>
-        <DropdownMenuItem className="cursor-pointer" onClick={() => login(a,b)}
-        >Log In</DropdownMenuItem>
+        {wallet.accounts.length > 0 && 
+          <DropdownMenuLabel>
+             <a> Address: {formatAddress(wallet.accounts[0])} </a>
+          </DropdownMenuLabel>
+        }
+        <DropdownMenuItem className="cursor-pointer" onClick={wallet.accounts.length < 1 ? connectMetaMask : disconnectMetaMask}>
+          {wallet.accounts.length > 0 ? 'Disconnect' : 'Connect'}
+
+        </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   )

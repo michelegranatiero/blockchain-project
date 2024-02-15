@@ -53,15 +53,15 @@ function Header() {
                       </NavLink>
                     </SheetClose>
                   ))}
-                  {/* <SheetClose asChild>
+                  <SheetClose asChild>
                     <Button asChild variant="outline">
                       <NavLink
-                        to={"#"}
+                        to={"account"}
                         className="text-sm font-medium transition-colors">
-                        Account?
+                        Account
                       </NavLink>
                     </Button>
-                  </SheetClose> */}
+                  </SheetClose>
                 </nav>
               </SheetContent>
             </Sheet>
@@ -79,13 +79,13 @@ function Header() {
                 </NavLink>
               </Button>
             ))}
-            {/* <Button asChild variant="outline">
+            <Button asChild variant="outline">
               <NavLink
-                to={"#"}
+                to={"account"}
                 className="text-sm font-medium transition-colors">
-                Account?
+                Account
               </NavLink>
-            </Button> */}
+            </Button>
           </nav>
           <div className="flex items-center">
             <Button

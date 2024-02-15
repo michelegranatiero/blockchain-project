@@ -10,18 +10,27 @@ import RootLayout from "./Layouts/RootLayout";
 import Home from "./Pages/Home";
 import MyTasks from "./Pages/MyTasks";
 import Task from "./Pages/Task";
+import Account from "./Pages/Account";
+
+// MetaMask
+import { MetaMaskContextProvider } from './hooks/useMetaMask'
 
 const router = createBrowserRouter(
+
   createRoutesFromElements(
+
     <Route path="/" element={<RootLayout />} >
       <Route index element={<Home />} />
       <Route path="/mytasks" element={<MyTasks />} />
       <Route path="/tasks/:id" element={<Task />} />
+      <Route path="/account" element={<Account />} />
       <Route path="*" element={<div>{<Navigate to="/" />}</div>}></Route>
     </Route>
   )
 );
 
 ReactDOM.createRoot(document.getElementById("root")).render(
-  <RouterProvider router={router} />
+  <MetaMaskContextProvider>
+    <RouterProvider router={router} />
+  </MetaMaskContextProvider>
 );
