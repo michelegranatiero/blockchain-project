@@ -6,6 +6,8 @@ import { Sun, Moon, Menu } from "lucide-react";
 import { useTheme } from "@/components/ThemeProvider";
 import { Sheet, SheetClose, SheetContent, SheetTrigger } from "./ui/sheet";
 
+import { useMetaMask } from "../hooks/useMetaMask";
+
 /* const NavLinks = ({closeNav}) => {
   return (
     <>
@@ -27,6 +29,8 @@ const routes = [
 
 function Header() {
   const { theme, setTheme } = useTheme();
+
+  const { wallet } = useMetaMask();
 
   return (
     <header className="sticky top-0 z-50 border-b bg-background/75 px-4 py-3 backdrop-blur sm:flex sm:justify-between">
@@ -53,7 +57,8 @@ function Header() {
                       </NavLink>
                     </SheetClose>
                   ))}
-                  <SheetClose asChild>
+                  {wallet.accounts.length > 0 && (
+                    <SheetClose asChild>
                     <Button asChild variant="outline">
                       <NavLink
                         to={"account"}
@@ -62,6 +67,7 @@ function Header() {
                       </NavLink>
                     </Button>
                   </SheetClose>
+                  )}
                 </nav>
               </SheetContent>
             </Sheet>
@@ -79,13 +85,15 @@ function Header() {
                 </NavLink>
               </Button>
             ))}
-            <Button asChild variant="outline">
+            {wallet.accounts.length > 0 && (
+              <Button asChild variant="Link">
               <NavLink
                 to={"account"}
                 className="text-sm font-medium transition-colors">
                 Account
               </NavLink>
             </Button>
+            )}
           </nav>
           <div className="flex items-center">
             <Button

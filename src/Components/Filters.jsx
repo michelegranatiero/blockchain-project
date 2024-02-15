@@ -2,12 +2,16 @@ import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { useEffect, useState } from "react";
 import FilterDrawer from "./FilterDrawer";
 
+import { useMetaMask } from "../hooks/useMetaMask";
+
 function Filters({ className = "" }) {
   const [filter, setFilter] = useState(["in progress", "pending"]);
 
-  useEffect(() => {
+  const { wallet } = useMetaMask();
+
+  /* useEffect(() => {
     console.log(filter);
-  }, [filter]);
+  }, [filter]); */
 
   return (
     <ToggleGroup
@@ -36,7 +40,8 @@ function Filters({ className = "" }) {
             <span>canceled</span>
           </ToggleGroupItem>
         </div>
-        <div className="flex flex-col items-stretch gap-1">
+        {wallet.accounts.length > 0 && (
+          <div className="flex flex-col items-stretch gap-1">
           <h4 className="mb-2 text-sm font-medium leading-none">My Role</h4>
           <ToggleGroupItem value="issuer" aria-label="Toggle issuer">
             <span>issuer</span>
@@ -48,6 +53,7 @@ function Filters({ className = "" }) {
             <span>worker</span>
           </ToggleGroupItem>
         </div>
+        )}
       </aside>
     </ToggleGroup>
   );

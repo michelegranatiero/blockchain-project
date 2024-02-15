@@ -12,7 +12,12 @@ import {
 import { ToggleGroupItem } from "@/components/ui/toggle-group";
 import { LuSettings2 } from "react-icons/lu";
 
+import { useMetaMask } from "../hooks/useMetaMask";
+
 function FilterDrawer() {
+
+  const { wallet } = useMetaMask();
+
   return (
     <Drawer>
       <DrawerTrigger asChild>
@@ -43,7 +48,8 @@ function FilterDrawer() {
               <span>canceled</span>
             </ToggleGroupItem>
           </div>
-          <div className="flex flex-col items-stretch gap-1 p-4 text-zinc-500">
+          {wallet.accounts.length > 0 && (
+            <div className="flex flex-col items-stretch gap-1">
             <h4 className="mb-2 text-sm font-medium leading-none">My Role</h4>
             <ToggleGroupItem value="issuer" aria-label="Toggle issuer">
               <span>issuer</span>
@@ -55,6 +61,7 @@ function FilterDrawer() {
               <span>worker</span>
             </ToggleGroupItem>
           </div>
+          )}
           <DrawerFooter>
             {/* <Button>Submit</Button> */}
             <DrawerClose asChild>
