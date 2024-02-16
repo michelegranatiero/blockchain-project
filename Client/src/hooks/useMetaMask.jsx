@@ -41,6 +41,8 @@ export const MetaMaskContextProvider = ({ children }) => {
   useEffect(() => {
     const getProvider = async () => {
       const provider = await detectEthereumProvider({ silent: true });
+      console.log(provider);
+      
       setHasProvider(Boolean(provider));
 
       if (provider) {
