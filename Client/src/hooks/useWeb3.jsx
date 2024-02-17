@@ -1,33 +1,46 @@
-import { Contract } from 'web3-eth-contract';
+import { useEffect, useState } from 'react';
 import { useMetaMask } from './useMetaMask';
+//import Web3 from 'web3';
 
 import EventsApp from "../../../Hardhat/artifacts/contracts/EventsApp.sol/EventsApp.json";
 
 
 export const useWeb3 = () => {
-  const { wallet } = useMetaMask();
+  const { wallet, web3 } = useMetaMask();
+  const [contract, setContract] = useState(null);
 
   const contractAddress = "0x5fbdb2315678afecb367f032d93f642f64180aa3";
 
-  const contract = new Contract(EventsApp.abi, contractAddress, { provider: 'http://127.0.0.1:8545' }); 
+  //const web3 = new Web3('http://127.0.0.1:8545');
+  //const contract = new web3.eth.Contract(EventsApp.abi, contractAddress);
+
+  useEffect(() => {
+    if (web3) {
+      const contractInstance = new web3.eth.Contract(EventsApp.abi, contractAddress);
+      setContract(contractInstance);
+    }
+  }, [web3]);
   
+  //const accounts = web3.eth.getAccounts();
 
   const register = () => {
+    if (!contract) {
+      console.error("Contract instance is not available.");
+      return;
+    }
     contract.methods.register().send({ from: wallet.accounts[0] })
-      .on('transactionHash', (hash) => {console.log(hash)});
+      .on('receipt', (hash) => {console.log(hash)});
   }
+
+  /* const register = async () => {
+    try {
+      const accounts = await web3.eth.getAccounts(); // Wait for getAccounts() to resolve
+      await contract.methods.register().send({ from: accounts[0] }); // Call the contract method
+    } catch (error) {
+      console.error("Error registering:", error);
+    }
+  } */
+
 
   return {register};
 }
-// Set up a connection to the Hardhat network
-//const web3 = new Web3(new Web3.providers.HttpProvider('http://localhost:8545'));
-
-// Log the current block number to the console
-/* web3.eth
-	.getBlockNumber()
-	.then((result) => {
-		console.log('Current block number: ' + result);
-	})
-	.catch((error) => {
-		console.error(error);
-	}); */

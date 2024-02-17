@@ -1,8 +1,8 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useEffect, createContext, useContext, useCallback } from 'react';
 
 import detectEthereumProvider from '@metamask/detect-provider';
 import { formatBalance } from '../utils';
+import { Web3 } from 'web3';
 
 const disconnectedState = { accounts: [], balance: '', chainId: '' };
 
@@ -16,59 +16,63 @@ export const MetaMaskContextProvider = ({ children }) => {
 
   const [wallet, setWallet] = useState(disconnectedState);
 
-  const _updateWallet = useCallback(async (providedAccounts) => {
+  const [web3, setWeb3] = useState(null); // State to hold web3 instance
 
-    const accounts = providedAccounts || (await window.ethereum.request({ method: 'eth_accounts' }));
+  const updateWallet = useCallback(async (providedAccounts, providedWeb3) => {
+
+    const accounts = providedAccounts || (await providedWeb3.eth.getAccounts());
 
     if (accounts.length === 0) {
       setWallet(disconnectedState);
       return;
     }
 
-    const balance = formatBalance(await window.ethereum.request({
-      method: 'eth_getBalance',
-      params: [accounts[0], 'latest'],
-    }));
+    const balance = formatBalance(await providedWeb3.eth.getBalance(accounts[0]));
 
-    const chainId = await window.ethereum.request({ method: 'eth_chainId' });
+    const chainId = await providedWeb3.eth.getChainId();
 
     setWallet({ accounts, balance, chainId });
   }, []);
 
-  const updateWalletAndAccounts = useCallback(() => _updateWallet(), [_updateWallet]);
-  const updateWallet = useCallback((accounts) => _updateWallet(accounts), [_updateWallet]);
-
   useEffect(() => {
     const getProvider = async () => {
       const provider = await detectEthereumProvider({ silent: true });
-      console.log(provider);
-      
-      setHasProvider(Boolean(provider));
 
       if (provider) {
-        updateWalletAndAccounts();
-        window.ethereum.on('accountsChanged', updateWallet);
-        window.ethereum.on('chainChanged', updateWalletAndAccounts);
+        try {
+          await provider.request({ method: 'eth_requestAccounts' });
+          const web3Instance = new Web3(provider);
+          setWeb3(web3Instance);
+          setHasProvider(true);
+          updateWallet(null, web3Instance);
+          provider.on('accountsChanged', (accounts) => updateWallet(accounts, web3Instance));
+          provider.on('chainChanged', () => updateWallet(null, web3Instance));
+        } catch (error) {
+          setHasProvider(false); // Set hasProvider to false if there's an error
+        }
+      }else {
+        setHasProvider(false); // Set hasProvider to false if no provider is detected
       }
     };
 
-    getProvider();
+    getProvider(); //initialize web3
 
     return () => {
-      window.ethereum?.removeListener('accountsChanged', updateWallet);
-      window.ethereum?.removeListener('chainChanged', updateWalletAndAccounts);
+      if (web3) {
+        web3.currentProvider.removeAllListeners('accountsChanged');
+        web3.currentProvider.removeAllListeners('chainChanged');
+      }
     };
-  }, [updateWallet, updateWalletAndAccounts]);
+  }, [updateWallet]);
 
   const connectMetaMask = async () => {
+    if (!web3) return;
     setIsConnecting(true);
 
     try {
-      const accounts = await window.ethereum.request({
-        method: 'eth_requestAccounts',
-      });
+      await web3.eth.requestAccounts();
       clearError();
-      updateWallet(accounts);
+      updateWallet(null, web3);
     } catch (err) {
       setErrorMessage(err.message);
     }
@@ -79,16 +83,9 @@ export const MetaMaskContextProvider = ({ children }) => {
 
   const disconnectMetaMask = async () => {
     try {
-      const accounts = await window.ethereum.request({
-        "method": "wallet_revokePermissions",
-        "params": [
-          {
-            "eth_accounts": {}
-          }
-        ]
-      });
+      await web3.eth.accounts.wallet.clear();
       clearError();
-      updateWallet(accounts);
+      updateWallet([]);
     } catch (err) {
       setErrorMessage(err.message);
     }
@@ -98,6 +95,7 @@ export const MetaMaskContextProvider = ({ children }) => {
     <MetaMaskContext.Provider
       value={{
         wallet,
+        web3,
         hasProvider,
         error: !!errorMessage,
         errorMessage,
