@@ -1,6 +1,5 @@
 import InfoBar from "@/Components/InfoBar"
 import { useMetaMask } from '../hooks/useMetaMask'
-import { formatChainAsNum } from '../utils'
 
 function Account() {
 
@@ -12,10 +11,10 @@ function Account() {
       <section className="flex flex-col gap-y-4 rounded-lg p-4">
       {wallet.accounts.length > 0 &&   
       <>
-        <div>Wallet Accounts: {wallet.accounts[0]}</div>
-        <div>Wallet Balance: {wallet.balance}</div>
-        <div>Hex ChainId: {wallet.chainId}</div>
-        <div>Numeric ChainId: {formatChainAsNum(wallet.chainId)}</div>
+        <div>Account: {wallet.accounts[0]}</div>
+        <div>Balance: {wallet.balance}</div>
+        {/* <div>Hex ChainId: {wallet.chainId}</div> */}
+        <div>{/* Numeric  */}Chain Id: {wallet.chainId}</div>
       </>
       }
       </section>

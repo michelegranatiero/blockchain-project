@@ -14,6 +14,10 @@ function ProfileButton() {
 
   const { wallet, hasProvider, isConnecting, connectMetaMask, disconnectMetaMask } = useMetaMask()
 
+  function handleConnection() {
+    wallet.accounts.length < 1 ? connectMetaMask() : disconnectMetaMask();
+  }
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger>
@@ -23,12 +27,12 @@ function ProfileButton() {
         </Avatar>
       </DropdownMenuTrigger>
       <DropdownMenuContent>
-        {wallet.accounts.length > 0 && 
+        {hasProvider && wallet.accounts.length > 0 && 
           <DropdownMenuLabel>
              <a> Address: {formatAddress(wallet.accounts[0])} </a>
           </DropdownMenuLabel>
         }
-        <DropdownMenuItem className="cursor-pointer" onClick={wallet.accounts.length < 1 ? connectMetaMask : disconnectMetaMask}>
+        <DropdownMenuItem className="cursor-pointer" onClick={handleConnection}>
           {wallet.accounts.length > 0 ? 'Disconnect' : 'Connect'}
 
         </DropdownMenuItem>

@@ -23,13 +23,25 @@ export const useWeb3 = () => {
   
   //const accounts = web3.eth.getAccounts();
 
-  const register = () => {
+  const register = async () => {
     if (!contract) {
       console.error("Contract instance is not available.");
       return;
     }
-    contract.methods.register().send({ from: wallet.accounts[0] })
-      .on('receipt', (hash) => {console.log(hash)});
+
+    try {
+      await contract.methods.register().send({ from: wallet.accounts[0] })
+      .on('receipt', (hash) => {
+        console.log(hash);
+        alert("Registered successfully");
+      });
+    } catch (error) {
+      console.error(error);
+      alert("Error registering");
+           
+      
+    }
+    
   }
 
   /* const register = async () => {
