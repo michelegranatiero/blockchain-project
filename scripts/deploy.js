@@ -28,9 +28,13 @@ async function main() {
 
   const numberOfRounds = 3;
   const workersRequired = 6;
-  const lock = await hre.ethers.deployContract("EventsApp",[numberOfRounds,workersRequired]);
+  const eventsApp = await hre.ethers.deployContract("EventsApp",[numberOfRounds,workersRequired]);
 
-  await lock.waitForDeployment();
+  await eventsApp.waitForDeployment();
+
+  console.log(
+    `Deployed to ' ${lock.target}`
+  );
 }
 
 // We recommend this pattern to be able to use async/await everywhere
