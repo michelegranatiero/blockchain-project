@@ -41,10 +41,34 @@ export const Web3ContextProvider = ({children}) => {
     
   }
 
+
+  const getAllTasks = async () => {
+    if (!contract) {
+      console.error("Contract instance is not available.");
+      return;
+    }
+
+    try {
+      const receipt = await contract.methods.getAllTasks().call();
+      console.log("Transaction receipt:", receipt);
+      
+      
+      //alert("Registered successfully");
+    } catch (error) {
+      console.error("Error registering:", error);
+           
+      
+    }
+    
+  }
+
+
+
   return (
     <Web3Context.Provider
       value = {{
         register,
+        getAllTasks,
       }}
     >
       {children}
