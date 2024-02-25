@@ -28,12 +28,14 @@ async function main() {
 
   const numberOfRounds = 3;
   const workersRequired = 6;
-  const eventsApp = await hre.ethers.deployContract("EventsApp",[numberOfRounds,workersRequired]);
 
+
+  const eventsApp = await hre.ethers.deployContract("EventsApp",[numberOfRounds,workersRequired]);
+  
   await eventsApp.waitForDeployment();
 
   console.log(
-    `Deployed to ' ${lock.target}`
+    `Deployed to ' ${eventsApp.target}`
   );
 }
 

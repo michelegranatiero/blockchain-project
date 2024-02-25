@@ -16,7 +16,7 @@ If it's the first time you open this project, run: 'npm install' to install all 
 
 (Not mandatory) 'npx hardhat compile' to compile the contract inside the contracts folder.
 
-'npx hardhat run ./scripts/deploy.js --network hardhat' to deploy the smart contract. Edit deploy.js to set the number of rounds and the number of workers.
+'npx hardhat run --network hardhat ./scripts/deploy.js' to deploy the smart contract. Edit deploy.js to set the number of rounds and the number of workers.
 
 'python ./scripts/python/number_oracle.py' starts and oracle sending random numbers to the smart contract (they are needed for some stuff).
 
