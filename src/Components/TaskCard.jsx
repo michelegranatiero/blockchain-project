@@ -9,7 +9,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 
-function TaskCard({ id, title, description, content }) {
+function TaskCard({ address, title, description, content }) {
 
   const navigate = useNavigate();
 
@@ -23,7 +23,7 @@ function TaskCard({ id, title, description, content }) {
       className="rounded-lg outline-0 ring-primary transition duration-300
       hover:ring-2 focus:ring-2 cursor-pointer">
       
-        <Card onClick={(e) => navigateStopPropagation(e, `/tasks/${id}`)}
+        <Card onClick={(e) => navigateStopPropagation(e, `/tasks/${address}`)}
           className="flex flex-col overflow-hidden rounded-lg border-2
           sm:h-60 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex h-full flex-col overflow-ellipsis">
