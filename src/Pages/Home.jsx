@@ -23,8 +23,12 @@ function Home() {
 
   useEffect(() => {
     async function fetchData() {
-      let tasks = await getAllTasks();
-      setTasks(tasks.reverse());
+      try {
+        let tasks = await getAllTasks();
+        setTasks(tasks.reverse());
+      } catch (error) {
+        console.error("Error retriving tasks:", error);
+      }
     }
     if (contract) fetchData();
     

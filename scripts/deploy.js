@@ -26,7 +26,7 @@ console.log(
 
 async function main() {
 
-  const numberOfRounds = 3;
+  /* const numberOfRounds = 3;
   const workersRequired = 6;
 
 
@@ -35,7 +35,17 @@ async function main() {
   await eventsApp.waitForDeployment();
 
   console.log(
-    `Deployed to ' ${eventsApp.target}`
+    `Deployed to ${eventsApp.target}`
+  ); */
+
+  const storageFactory = await hre.ethers.deployContract("StorageFactory");
+
+  await storageFactory.waitForDeployment();
+  
+  //while (currentBlock + 5 > (await hre.ethers.provider.getBlockNumber())) {}
+
+  console.log(
+    `Deployed to ${storageFactory.target}`
   );
 }
 

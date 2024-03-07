@@ -99,7 +99,7 @@ export const Web3ContextProvider = ({children}) => {
         .deployTask(title, descr, numRounds, numWorkers)
         .send({from: wallet.accounts[0]});
       console.log("Transaction receipt:", receipt);
-      console.log(receipt.events.Deployed.returnValues.taskAddress)
+      //console.log(receipt.events.Deployed.returnValues.taskAddress)
       return true;
       
     } catch (error) {
