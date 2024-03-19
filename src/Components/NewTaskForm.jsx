@@ -2,10 +2,10 @@ import { z } from 'zod';
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 
-import { Button } from "@/components/ui/button"
+import { Button } from "@/Components/ui/button"
 import { useWeb3 } from '@/hooks/useWeb3';
 
-import {DialogClose, DialogFooter} from "@/components/ui/dialog"
+import {DialogClose, DialogFooter} from "@/Components/ui/dialog"
 import {
   Form,
   FormControl,
@@ -14,8 +14,10 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from "@/components/ui/form"
-import { Input } from "@/components/ui/input"
+} from "@/Components/ui/form"
+import { Input } from "@/Components/ui/input"
+import { Loader2 } from "lucide-react"
+import { useState } from 'react';
 
 
 
@@ -26,12 +28,13 @@ const taskSchema = z.object({
   descr: z.coerce.string().min(2).max(50),
   numRounds: z.coerce.number().min(2).max(1000),
   numWorkers: z.coerce.number().min(2).max(10000),
-  //numworkers should be greater than numrounds (also on smart contract)
 })
 
-function NewTaskForm({setOpenState}) {
+function NewTaskForm({setOpenState, forceUpdate}) {
 
-  const { deployTask } = useWeb3();
+  const { createTask } = useWeb3();
+
+  const [loadingBtn, setloadingBtn] = useState(false);
 
   const form = useForm({
     resolver: zodResolver(taskSchema),
@@ -46,13 +49,18 @@ function NewTaskForm({setOpenState}) {
   async function onSubmit(values) {
     // Do something with the form values.
     // ✅ This will be type-safe and validated.
-    const response = await deployTask(values.title, values.descr, values.numRounds, values.numWorkers);
+    setloadingBtn(true);
+    const response = await createTask(values.title, values.descr, values.numRounds, values.numWorkers);
     if (response){
       setOpenState(false);
-      alert("Task deployed successfully");
-      window.location.reload();
+      alert("Task created successfully");
+      //window.location.reload();
+      forceUpdate((k) => k + 1);
     } 
-    else alert("Error deploying task.");
+    else alert("Error creating task.");
+    setloadingBtn(false);
+
+    
   }
 
   const formFields = [
@@ -106,13 +114,20 @@ function NewTaskForm({setOpenState}) {
           />
         ))}
         {/* <div className='text-end'> */}
-        <DialogFooter>
+        <DialogFooter >
           <DialogClose asChild>
             <Button type="button" variant="outline">
               Close
             </Button>
           </DialogClose>
-          <Button type="submit">Submit</Button>
+          {loadingBtn ? 
+          <Button disabled>
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            Please wait
+          </Button>
+          : <Button type="submit">Submit</Button>
+          }
+          
         </DialogFooter>
           
         {/* </div> */}

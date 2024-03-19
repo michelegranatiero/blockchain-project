@@ -1,9 +1,9 @@
 import { NavLink } from "react-router-dom";
 import Container from "./ui/Container";
-import { Button } from "@/components/ui/button";
-import ProfileButton from "@/components/ui/ProfileButton";
+import { Button } from "@/Components/ui/button";
+import ConnectButton from "@/Components/ui/ConnectButton";
 import { Sun, Moon, Menu } from "lucide-react";
-import { useTheme } from "@/components/ThemeProvider";
+import { useTheme } from "@/Components/ThemeProvider";
 import { Sheet, SheetClose, SheetContent, SheetTrigger } from "./ui/sheet";
 
 import { useMetaMask } from "@/hooks/useMetaMask";
@@ -22,8 +22,8 @@ import { useMetaMask } from "@/hooks/useMetaMask";
 } */
 const routes = [
   {
-    path: "mytasks",
-    name: "My Tasks",
+    path: "/",
+    name: "Home",
   },
 ];
 
@@ -44,7 +44,7 @@ function Header() {
               <SheetContent side="left" className="w-[300px] sm:w-[400px]">
                 <SheetClose asChild>
                   <NavLink to={"/"} className="px-2 pb-4">
-                    <h1 className="text-2xl font-bold">Logo</h1>
+                    <h1 className="text-2xl font-bold">FedEthML</h1>
                   </NavLink>
                 </SheetClose> 
                 <nav className="flex flex-col gap-4">
@@ -57,7 +57,7 @@ function Header() {
                       </NavLink>
                     </SheetClose>
                   ))}
-                  {wallet.accounts.length > 0 && (
+                  {/* {wallet.accounts.length > 0 && (
                     <SheetClose asChild>
                     <Button asChild variant="outline">
                       <NavLink
@@ -67,12 +67,12 @@ function Header() {
                       </NavLink>
                     </Button>
                   </SheetClose>
-                  )}
+                  )} */}
                 </nav>
               </SheetContent>
             </Sheet>
             <NavLink to={"/"} className="ml-4 lg:ml-0">
-              <h1 className="text-2xl font-bold">Logo</h1>
+              <h1 className="text-2xl font-bold">FedEthML</h1>
             </NavLink>
           </div>
           <nav className="mx-6 hidden items-center space-x-4 md:block lg:space-x-6">
@@ -85,7 +85,7 @@ function Header() {
                 </NavLink>
               </Button>
             ))}
-            {wallet.accounts.length > 0 && (
+            {/* {wallet.accounts.length > 0 && (
               <Button asChild variant="Link">
               <NavLink
                 to={"account"}
@@ -93,7 +93,7 @@ function Header() {
                 Account
               </NavLink>
             </Button>
-            )}
+            )} */}
           </nav>
           <div className="flex items-center">
             <Button
@@ -106,7 +106,7 @@ function Header() {
               <Moon className="absolute h-6 w-6 rotate-90 scale-0 transition-all dark:-rotate-0 dark:scale-100" />
               <span className="sr-only"> Toggle Theme</span>
             </Button>
-            <ProfileButton />
+            <ConnectButton />
           </div>
         </div>
       </Container>

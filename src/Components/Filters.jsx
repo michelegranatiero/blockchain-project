@@ -1,25 +1,33 @@
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { ToggleGroup, ToggleGroupItem } from "@/Components/ui/toggle-group";
 import { useEffect, useState } from "react";
 import FilterDrawer from "./FilterDrawer";
 
 import { useMetaMask } from "@/hooks/useMetaMask";
+import { useWeb3 } from "@/hooks/useWeb3";
 
 function Filters({ className = "" }) {
-  const [filter, setFilter] = useState(["in progress", "pending"]);
-
+  
   const { wallet } = useMetaMask();
-
+  const { globFilters } = useWeb3();
+  
   /* useEffect(() => {
     console.log(filter);
   }, [filter]); */
+  
+  const stateFilters = ["deployed", "started", "completed"];
+  const roleFilters = ["issuer", "funder", "worker"];
+
+  //const [filter, setFilter] = useState([/* ...stateFilters, ...roleFilters */]);
+
+  const [filters, setFilters] = globFilters;
 
   return (
     <ToggleGroup
-      type="multiple" variant="outline" defaultValue={filter}
-      onValueChange={(value) => setFilter(value)}
+      type="multiple" variant="outline" defaultValue={filters}
+      onValueChange={(value) => setFilters(value)}
       className={`flex-col items-start justify-start self-stretch ${className}`}>
       <div className="px-4 md:hidden">
-        <FilterDrawer />
+        <FilterDrawer stateFilters={stateFilters} roleFilters={roleFilters} />
       </div>
       <aside className="sticky top-14 hidden flex-col gap-y-4 whitespace-nowrap p-4 text-zinc-500 md:flex ">
         <h3 className="mt-4 border-b-2 pb-2 text-lg font-medium leading-none">
@@ -27,33 +35,28 @@ function Filters({ className = "" }) {
         </h3>
         <div className="flex flex-col items-stretch gap-1">
           <h4 className="mb-2 text-sm font-medium leading-none">State</h4>
-          <ToggleGroupItem value="completed" aria-label="Toggle completed">
-            <span>completed</span>
-          </ToggleGroupItem>
-          <ToggleGroupItem value="in progress" aria-label="Toggle in progress">
-            <span>in progress</span>
-          </ToggleGroupItem>
-          <ToggleGroupItem value="pending" aria-label="Toggle pending">
-            <span>pending</span>
-          </ToggleGroupItem>
-          <ToggleGroupItem value="canceled" aria-label="Toggle canceled">
-            <span>canceled</span>
-          </ToggleGroupItem>
+          {stateFilters.map((state) => (
+            <ToggleGroupItem
+              key={state}
+              value={state.toLowerCase()}
+              aria-label={`Toggle ${state.toLowerCase()}`}>
+              <span>{state}</span>
+            </ToggleGroupItem>
+          ))}
         </div>
-        {wallet.accounts.length > 0 && (
+        {wallet.accounts.length > 0 ? (
           <div className="flex flex-col items-stretch gap-1">
           <h4 className="mb-2 text-sm font-medium leading-none">My Role</h4>
-          <ToggleGroupItem value="issuer" aria-label="Toggle issuer">
-            <span>issuer</span>
-          </ToggleGroupItem>
-          <ToggleGroupItem value="funder" aria-label="Toggle funder">
-            <span>funder</span>
-          </ToggleGroupItem>
-          <ToggleGroupItem value="worker" aria-label="Toggle worker">
-            <span>worker</span>
-          </ToggleGroupItem>
+          {roleFilters.map((role) => (
+            <ToggleGroupItem
+              key={role}
+              value={role.toLowerCase()}
+              aria-label={`Toggle ${role.toLowerCase()}`}>
+              <span>{role}</span>
+            </ToggleGroupItem>
+          ))}
         </div>
-        )}
+        ): null}
       </aside>
     </ToggleGroup>
   );

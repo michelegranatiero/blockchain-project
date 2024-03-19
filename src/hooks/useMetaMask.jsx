@@ -27,7 +27,9 @@ export const MetaMaskContextProvider = ({ children }) => {
       return;
     }
 
-    const balance = formatBalance(await providedWeb3.eth.getBalance(accounts[0]));
+    const balance = BigInt(await providedWeb3.eth.getBalance(accounts[0])); // balance in wei here (BigInt)
+    
+    
 
     const chainId = formatChainAsNum(await providedWeb3.eth.getChainId());
     

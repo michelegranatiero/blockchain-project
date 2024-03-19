@@ -26,26 +26,12 @@ console.log(
 
 async function main() {
 
-  /* const numberOfRounds = 3;
-  const workersRequired = 6;
+  const FedMLContract = await hre.ethers.deployContract("FedMLContract");
 
-
-  const eventsApp = await hre.ethers.deployContract("EventsApp",[numberOfRounds,workersRequired]);
-  
-  await eventsApp.waitForDeployment();
+  await FedMLContract.waitForDeployment();
 
   console.log(
-    `Deployed to ${eventsApp.target}`
-  ); */
-
-  const storageFactory = await hre.ethers.deployContract("StorageFactory");
-
-  await storageFactory.waitForDeployment();
-  
-  //while (currentBlock + 5 > (await hre.ethers.provider.getBlockNumber())) {}
-
-  console.log(
-    `Deployed to ${storageFactory.target}`
+    `Deployed to ${FedMLContract.target}`
   );
 }
 

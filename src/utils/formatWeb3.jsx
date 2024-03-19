@@ -9,5 +9,11 @@ export const formatBalance = (rawBalance) => {
   }
   
   export const formatAddress = (addr) => {
-    return `${addr.substring(0, 8)}...`
+    return `${addr.slice(0,7)}...${addr.slice(-5)}`
+  }
+
+
+  export const formatState = (state) => {
+    const states = ["deployed", "started", "completed"]
+    return states[state];
   }

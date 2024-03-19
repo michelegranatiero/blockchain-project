@@ -21,10 +21,10 @@ function App() {
   
       <Route path="/" element={<RootLayout />} >
         <Route index element={<Home />} />
-        <Route path="/mytasks" element={<MyTasks />} />
-        {wallet.accounts.length > 0 && (
+        {/* <Route path="/mytasks" element={<MyTasks />} /> */}
+        {/* {wallet.accounts.length > 0 && (
           <Route path="/account" element={<Account />} />
-        )}
+        )} */}
         <Route path="/tasks/:id" element={<Task />} />
         <Route path="*" element={<div>{<Navigate to="/" />}</div>}></Route>
       </Route>
