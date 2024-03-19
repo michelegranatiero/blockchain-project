@@ -24,8 +24,8 @@ import { useState } from 'react';
 const taskSchema = z.object({
   title: z.coerce.string().min(2, {
     message: "Username must be at least 2 characters.",
-  }).max(50),
-  descr: z.coerce.string().min(2).max(50),
+  }).max(32),
+  descr: z.coerce.string().min(2).max(1000),
   numRounds: z.coerce.number().min(2).max(1000),
   numWorkers: z.coerce.number().min(2).max(10000),
 })

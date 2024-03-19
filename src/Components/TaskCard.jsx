@@ -70,7 +70,13 @@ function TaskCard({ forceUpd, id, title, description, state, regWorkers,}) {
           max-h-[25rem] sm:h-60 sm:flex-row sm:items-center sm:justify-between overflow-hidden">
           <div className="flex h-full flex-col overflow-hidden grow">
             <CardHeader className="sm:pr-0">
-              <CardTitle className="line-clamp-2 sm:line-clamp-1">{title}</CardTitle>
+              <div className="flex gap-2 items-center">
+                <Badge variant="outline" className="text-sm"> 
+                  <span className="text-muted-foreground">#</span>
+                  {String(id)}
+                </Badge>
+                <CardTitle className="line-clamp-2 sm:line-clamp-1">{title}</CardTitle>
+              </div>
             </CardHeader>
             <ScrollArea className="mx-6 mb-6 sm:mr-0 h-32 sm:min-h-24 rounded-md border "
               onClick={(e) => {e.stopPropagation()}}>
