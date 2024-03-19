@@ -17,3 +17,8 @@ export const formatBalance = (rawBalance) => {
     const states = ["deployed", "started", "completed"]
     return states[state];
   }
+
+  export const capitalizeFirstChar = (string) => {
+    return string.charAt(0).toUpperCase() + string.slice(1);
+  }
+

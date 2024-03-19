@@ -72,6 +72,7 @@ function Home() {
                 id={task.id}
                 title={task.title}
                 description={task.description}
+                state={task.state}
                 regWorkers={task.registeredWorkers}
                 forceUpd={[forceUpdate, setForceUpdate]}
               />

@@ -12,10 +12,12 @@ import {
 import RegisterTaskModal from "@/Components/RegisterTaskModal";
 import FundTaskModal from "@/Components/FundTaskModal";
 import { ScrollArea } from "@/Components/ui/scroll-area"
+import { Badge } from "@/Components/ui/badge"
 import { useEffect, useState } from "react";
 import { useWeb3 } from "@/hooks/useWeb3";
+import {formatState, capitalizeFirstChar} from "@/utils/formatWeb3";
 
-function TaskCard({ forceUpd, id, title, description, regWorkers,}) {
+function TaskCard({ forceUpd, id, title, description, state, regWorkers,}) {
 
   const navigate = useNavigate();
 
@@ -62,11 +64,10 @@ function TaskCard({ forceUpd, id, title, description, regWorkers,}) {
   return (
     <article
       className="rounded-lg outline-0 ring-primary transition duration-300
-      hover:ring-2 focus:ring-2 cursor-pointer">
-      
+      hover:ring-2 focus:ring-2 cursor-pointer ">
         <Card onClick={(e) => navigateStopPropagation(e, `/tasks/${id}`)}
           className="flex flex-col rounded-lg border-2
-          max-h-[25rem] sm:h-60 sm:flex-row sm:items-center sm:justify-between">
+          max-h-[25rem] sm:h-60 sm:flex-row sm:items-center sm:justify-between overflow-hidden">
           <div className="flex h-full flex-col overflow-hidden grow">
             <CardHeader className="sm:pr-0">
               <CardTitle className="line-clamp-2 sm:line-clamp-1">{title}</CardTitle>
@@ -74,23 +75,31 @@ function TaskCard({ forceUpd, id, title, description, regWorkers,}) {
             <ScrollArea className="mx-6 mb-6 sm:mr-0 h-32 sm:min-h-24 rounded-md border "
               onClick={(e) => {e.stopPropagation()}}>
               <div className="px-2 py-1">
-              <CardDescription className="text-sm">{description} </CardDescription>
-                <p>amFunder: {String(data.amFunder)}</p>
-                <p>amWorker: {String(data.amWorker)}</p>
-                <p>amIssuer: {String(data.amIssuer)}</p>
+                <CardDescription className="text-sm ">{description}</CardDescription>
               </div>
             </ScrollArea>
-            <CardFooter className="sm:pr-0 pb-0 sm:pb-6 gap-2">
-              {/* <p className="line-clamp-2 sm:line-clamp-1">Paragraph</p> */}
-              {data.amIssuer ? <div> Issuer </div> : null}
-              {data.amFunder ? <div> Funder </div> : null}
-              {data.amWorker ? <div> Worker</div> : null}
+            <CardFooter className="sm:pr-0 pb-0 sm:pb-6">
+              <div className="flex flex-wrap gap-2 w-full justify-between">
+                  <div className="flex flex-nowrap items-center text-sm text-muted-foreground">State:&nbsp;<Badge>{capitalizeFirstChar(formatState(state))}</Badge></div>
+                  <div className="flex flex-nowrap gap-2">
+                    {data.amIssuer ? <Badge variant="secondary"> Issuer </Badge> : null}
+                    {data.amFunder ? <Badge variant="secondary"> Funder </Badge> : null}
+                    {data.amWorker ? <Badge variant="secondary"> Worker</Badge> : null}
+                  </div>
+                  
+                 
+              </div>
+              
             </CardFooter>
           </div>
+          
           <div className="flex justify-around gap-3 p-6 sm:flex-col sm:justify-center sm:h-full">
-            <FundTaskModal className="self-end" taskId={id} disabledState={false} forceUpdate={setForceUpdate}/>
-            <RegisterTaskModal className="self-end" taskId={id} disabledState={data.amWorker} forceUpdate={setForceUpdate}/>
+            { formatState(state) == "deployed" ?<>
+              <FundTaskModal className="self-end" taskId={id} disabledState={!formatState(state) == "deployed"} forceUpdate={setForceUpdate}/>
+              <RegisterTaskModal className="self-end" taskId={id} disabledState={data.amWorker || !formatState(state) == "deployed"} forceUpdate={setForceUpdate}/>
+            </>: null}
           </div>
+          
         </Card>
     </article>
   );

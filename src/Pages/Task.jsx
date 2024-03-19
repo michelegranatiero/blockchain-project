@@ -75,8 +75,10 @@ function Task() {
         <p>current account is worker: {String(task.amWorker)}</p>
         <p>current account is issuer: {String(task.amIssuer)}</p>
         <div className="flex gap-3 justify-end self-end w-full h-full">
-          <FundTaskModal className="self-end" taskId={id} disabledState={false} forceUpdate={setForceUpdate}/>
-          <RegisterTaskModal className="self-end" taskId={id} disabledState={task.amWorker} forceUpdate={setForceUpdate}/>
+        { formatState(task.details.state) == "deployed" ?<>
+          <FundTaskModal className="self-end" taskId={id} disabledState={!formatState(task.details.state) == "deployed"} forceUpdate={setForceUpdate}/>
+          <RegisterTaskModal className="self-end" taskId={id} disabledState={task.amWorker || !formatState(task.details.state) == "deployed"} forceUpdate={setForceUpdate}/>
+        </>: null}
         </div>
 
       </Card>
