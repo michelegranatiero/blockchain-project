@@ -15,22 +15,22 @@ import { Loader2 } from "lucide-react"
 
 
 
-function RegisterTaskModal({ className = "", disabledState = false, taskId, forceUpdate}) {
+function StopFundingModal({ className = "", disabledState = false, taskId, forceUpdate}) {
 
-  const {wallet, register} = useWeb3();
+  const {wallet, stopFunding} = useWeb3();
 
   const [open, setOpen] = useState(false);
   const [loadingBtn, setloadingBtn] = useState(false);
 
-  async function onRegister(){
+  async function onSubmit(){
     setloadingBtn(true);
-    const res = await register(taskId);
+    const res = await stopFunding(taskId);
     if (res) {
       setOpen(false);
-      alert("Registered successfully");
+      alert("Transaction successful");
       //window.location.reload();
       forceUpdate((k) => k + 1);
-    }else alert("Registration canceled or denied.");
+    }else alert("Transaction canceled or denied.");
     setloadingBtn(false);
   }
 
@@ -45,13 +45,13 @@ function RegisterTaskModal({ className = "", disabledState = false, taskId, forc
   return (
     <Dialog open={open} onOpenChange={handleOpenChanging}>
       <DialogTrigger asChild onClick={(e) => {e.stopPropagation()}}>
-        <Button className={` ${className}`} disabled={disabledState}>Register</Button>
+        <Button className={` ${className}`} disabled={disabledState}>Stop Funding</Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-[470px]">
         <DialogHeader>
-          <DialogTitle>Are you sure you want to register for this task?</DialogTitle>
+          <DialogTitle>Do you want to stop funding for this task?</DialogTitle>
           <DialogDescription>
-            This action can not be revoked.
+            This action can cause the round to start. This action can not be revoked.
           </DialogDescription>
         </DialogHeader>
         <DialogFooter>
@@ -65,7 +65,7 @@ function RegisterTaskModal({ className = "", disabledState = false, taskId, forc
             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
             Please wait
           </Button>
-          : <Button type="submit" onClick={onRegister}>Register</Button>
+          : <Button type="submit" onClick={onSubmit}>Stop Funding</Button>
           }
           
           
@@ -75,4 +75,4 @@ function RegisterTaskModal({ className = "", disabledState = false, taskId, forc
   )
 }
 
-export default RegisterTaskModal;
+export default StopFundingModal;

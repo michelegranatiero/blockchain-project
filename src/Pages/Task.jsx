@@ -7,10 +7,14 @@ import { useEffect, useState } from "react";
 import  { formatAddress, formatState } from '@/utils/formatWeb3'
 import RegisterTaskModal from "@/Components/RegisterTaskModal";
 import FundTaskModal from "@/Components/FundTaskModal";
+import GetWeightsBtn from "@/Components/GetWeightsBtn";
+import GetAdminFileBtn from "@/Components/GetAdminFileBtn";
+import CommitWorkModal from "@/Components/CommitWorkModal";
+import StopFundingModal from "@/Components/StopFundingModal";
 
 function Task() {
   const { wallet, contract, getTask, getFunderList, getFunds,
-     getSelWorkerList, amFunder, amWorker, amIssuer} = useWeb3();
+     getSelWorkerList, getRoles} = useWeb3();
 
   const { id } = useParams();
 
@@ -21,7 +25,7 @@ function Task() {
     funds: null,
     amFunder: false,
     amWorker: false,
-    amIssuer: false,
+    amAdmin: false,
   });
 
   const [forceUpdate, setForceUpdate] = useState(0);
@@ -34,20 +38,19 @@ function Task() {
       let funders = await getFunderList(id);
       let funds = await getFunds(id);
       let selWorkers = await getSelWorkerList(id);
-      let funderBool = await amFunder(id);
-      let workerBool = await amWorker(id);
-      let issuerBool = await amIssuer(id);
+      let roles = await getRoles(id);
       setTask(prevDetails => ({ ...prevDetails, 
         details: details, 
         funders: funders, 
         selWorkers: selWorkers,
         funds: funds,
-        amFunder: funderBool,
-        amWorker: workerBool,
-        amIssuer: issuerBool,
+        amFunder: roles.funder,
+        amWorker: roles.worker,
+        amAdmin: roles.admin,
       }));
     }
-    if (contract && wallet.accounts.length > 0) getDetails();
+
+    if (contract) getDetails(); // da sistemare, aggiungere <div>{<Navigate to="/" />}</div>
   }, [contract, wallet, forceUpdate]);
 
   return (
@@ -57,11 +60,11 @@ function Task() {
         <p>Description: {task.details.description}</p>
         <p>Id: {id}</p>
         <p>Current round: {String(task.details.currentRound)}</p>{/* something to change here on initialization*/}
-        <p>Issuer: {formatAddress(String(task.details.issuer))}</p>
+        <p>Admin: {formatAddress(String(task.details.admin))}</p>
         <p>Funding completed: {String(task.details.fundingCompleted)}</p>
         <p>numberOfRounds: {String(task.details.numberOfRounds)}</p>
         <p>registeredWorkers: {String(task.details.registeredWorkers)}</p>
-        <p>registeringCompleted: {String(task.details.registeringCompleted)}</p>
+        <p>registeringCompleted: {String(task.details.registeringCompleted)}</p> {/* va rimossa?*/}
         <p>rounds (struct): {String(task.details.rounds)}</p>
         <p>state: {formatState(Number(task.details.state))}</p>
         <p>workersPerRound: {String(task.details.workersPerRound)}</p>
@@ -73,12 +76,25 @@ function Task() {
         <hr />
         <p>current account is funder: {String(task.amFunder)}</p>
         <p>current account is worker: {String(task.amWorker)}</p>
-        <p>current account is issuer: {String(task.amIssuer)}</p>
-        <div className="flex gap-3 justify-end self-end w-full h-full">
-        { formatState(task.details.state) == "deployed" ?<>
-          <FundTaskModal className="self-end" taskId={id} disabledState={!formatState(task.details.state) == "deployed"} forceUpdate={setForceUpdate}/>
-          <RegisterTaskModal className="self-end" taskId={id} disabledState={task.amWorker || !formatState(task.details.state) == "deployed"} forceUpdate={setForceUpdate}/>
-        </>: null}
+        <p>current account is admin: {String(task.amAdmin)}</p>
+        <div className="flex gap-3 justify-end items-end w-full h-full">
+          { formatState(task.details.state) == "deployed" ?<>
+            <FundTaskModal taskId={id} disabledState={!formatState(task.details.state) == "deployed"} forceUpdate={setForceUpdate}/>
+            <RegisterTaskModal taskId={id} disabledState={task.amWorker || !formatState(task.details.state) == "deployed"} forceUpdate={setForceUpdate}/>
+          </>: null}
+          { formatState(task.details.state) == "deployed" && task.amAdmin ?<>
+            <StopFundingModal taskId={id} disabledState={!formatState(task.details.state) == "deployed"} forceUpdate={setForceUpdate}/>
+            {/* check other conditions (disabled if is funding is already stopped) */}
+          </>: null}
+          { formatState(task.details.state) == "deployed" ?<> {/*state:started check round + other things */}
+            <GetWeightsBtn taskId={id} disabledState={!formatState(task.details.state) == "deployed"} forceUpdate={setForceUpdate}/>
+          </>: null}
+          { formatState(task.details.state) == "deployed" ?<> {/*state:started check round + other things*/}
+            <CommitWorkModal taskId={id} disabledState={!formatState(task.details.state) == "deployed"} forceUpdate={setForceUpdate}/>
+            {/* disable state if worker has already committed the work */}
+          </>: null}
+
+          <GetAdminFileBtn taskId={id} forceUpdate={setForceUpdate}/>
         </div>
 
       </Card>

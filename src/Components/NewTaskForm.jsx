@@ -27,12 +27,16 @@ const taskSchema = z.object({
   }).max(32),
   descr: z.coerce.string().min(2).max(1000),
   numRounds: z.coerce.number().min(2).max(1000),
-  numWorkers: z.coerce.number().min(2).max(10000),
+  workersPerRound: z.coerce.number().min(2).max(10000),
+  file: z.instanceof(FileList).refine((file) => {
+    if (file.length == 0 || !file) return false;
+    return true;
+  }),
 })
 
 function NewTaskForm({setOpenState, forceUpdate}) {
 
-  const { createTask } = useWeb3();
+  const { createTask, sendToIPFS } = useWeb3();
 
   const [loadingBtn, setloadingBtn] = useState(false);
 
@@ -42,15 +46,29 @@ function NewTaskForm({setOpenState, forceUpdate}) {
       title: "",
       descr: "",
       numRounds: "",
-      numWorkers: "",
+      workersPerRound: "",
     },
   });
+
+  const fileRef = form.register("file"); // fundamental for input file
 
   async function onSubmit(values) {
     // Do something with the form values.
     // ✅ This will be type-safe and validated.
+
     setloadingBtn(true);
-    const response = await createTask(values.title, values.descr, values.numRounds, values.numWorkers);
+    
+    //Upload file to IPFS
+    const ipfsRes = await sendToIPFS(values.file[0]);
+    if (!ipfsRes) {
+      alert("Error uploading file to IPFS.");
+      setloadingBtn(false);
+      return;
+    }
+    return;
+
+    //pass ipfs hash to createTask when ready
+    const response = await createTask(values.title, values.descr, values.numRounds, values.workersPerRound);
     if (response){
       setOpenState(false);
       alert("Task created successfully");
@@ -83,10 +101,10 @@ function NewTaskForm({setOpenState, forceUpdate}) {
       placeholder: "4",
     },
     {
-      name: "numWorkers",
-      label: "Number of Workers",
+      name: "workersPerRound",
+      label: "Number of Workers per Round",
       type: "number",
-      placeholder: "16",
+      placeholder: "4",
     },
   ]
 
@@ -103,7 +121,7 @@ function NewTaskForm({setOpenState, forceUpdate}) {
               <FormItem>
                 <FormLabel htmlFor={item.name}>{item.label}</FormLabel>
                 <FormControl>
-                  <Input type={item.type} placeholder={item.placeholder} {...field} />
+                  <Input type={item.type} placeholder={item.placeholder} {...field}/>
                 </FormControl>
                 {/* <FormDescription>
                   Description
@@ -113,6 +131,19 @@ function NewTaskForm({setOpenState, forceUpdate}) {
             )}
           />
         ))}
+        <FormField
+              control={form.control}
+              name="file"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel htmlFor="file">File</FormLabel>
+                  <FormControl>
+                    <Input type="file" {...fileRef} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
         {/* <div className='text-end'> */}
         <DialogFooter >
           <DialogClose asChild>

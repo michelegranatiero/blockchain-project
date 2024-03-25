@@ -11,6 +11,10 @@ import {
 
 import RegisterTaskModal from "@/Components/RegisterTaskModal";
 import FundTaskModal from "@/Components/FundTaskModal";
+import GetWeightsBtn from "@/Components/GetWeightsBtn";
+import GetAdminFileBtn from "@/Components/GetAdminFileBtn";
+import CommitWorkModal from "@/Components/CommitWorkModal";
+import StopFundingModal from "@/Components/StopFundingModal";
 import { ScrollArea } from "@/Components/ui/scroll-area"
 import { Badge } from "@/Components/ui/badge"
 import { useEffect, useState } from "react";
@@ -28,12 +32,12 @@ function TaskCard({ forceUpd, id, title, description, state, regWorkers,}) {
 
   const [forceUpdate, setForceUpdate] = forceUpd;
 
-  const {wallet, amFunder, amWorker, amIssuer} = useWeb3();
+  const {wallet, getRoles} = useWeb3();
 
   const [data, setData] = useState({
     amFunder: false,
     amWorker: false,
-    amIssuer: false,
+    amAdmin: false,
   });
 
 
@@ -43,18 +47,15 @@ function TaskCard({ forceUpd, id, title, description, state, regWorkers,}) {
       let funders = await getFunderList(id);
       let funds = await getFunds(id);
       let selWorkers = await getSelWorkerList(id); */
-      let funderBool = await amFunder(id);
-      
-      let workerBool = await amWorker(id);
-      let issuerBool = await amIssuer(id);
+      let roles = await getRoles(id);
       setData(prevData => ({ ...prevData, 
         /* details: details, 
         funders: funders, 
         selWorkers: selWorkers,
         funds: funds, */
-        amFunder: funderBool,
-        amWorker: workerBool,
-        amIssuer: issuerBool,
+        amFunder: roles.funder,
+        amWorker: roles.worker,
+        amAdmin: roles.admin,
       }));
     }
     //if (contract && wallet.accounts.length > 0) getDetails();
@@ -67,7 +68,7 @@ function TaskCard({ forceUpd, id, title, description, state, regWorkers,}) {
       hover:ring-2 focus:ring-2 cursor-pointer ">
         <Card onClick={(e) => navigateStopPropagation(e, `/tasks/${id}`)}
           className="flex flex-col rounded-lg border-2
-          max-h-[25rem] sm:h-60 sm:flex-row sm:items-center sm:justify-between overflow-hidden">
+          sm:h-60 sm:flex-row sm:items-center sm:justify-between overflow-hidden   min-h-[22rem]"> {/* max-h-[25rem] */}
           <div className="flex h-full flex-col overflow-hidden grow">
             <CardHeader className="sm:pr-0">
               <div className="flex gap-2 items-center">
@@ -88,7 +89,7 @@ function TaskCard({ forceUpd, id, title, description, state, regWorkers,}) {
               <div className="flex flex-wrap gap-2 w-full justify-between">
                   <div className="flex flex-nowrap items-center text-sm text-muted-foreground">State:&nbsp;<Badge>{capitalizeFirstChar(formatState(state))}</Badge></div>
                   <div className="flex flex-nowrap gap-2">
-                    {data.amIssuer ? <Badge variant="secondary"> Issuer </Badge> : null}
+                    {data.amAdmin ? <Badge variant="secondary"> Admin </Badge> : null}
                     {data.amFunder ? <Badge variant="secondary"> Funder </Badge> : null}
                     {data.amWorker ? <Badge variant="secondary"> Worker</Badge> : null}
                   </div>
@@ -99,11 +100,26 @@ function TaskCard({ forceUpd, id, title, description, state, regWorkers,}) {
             </CardFooter>
           </div>
           
-          <div className="flex justify-around gap-3 p-6 sm:flex-col sm:justify-center sm:h-full">
+          <div className="flex flex-wrap justify-around gap-3 p-6 sm:flex-col sm:justify-center sm:h-full sm:w-40">
             { formatState(state) == "deployed" ?<>
-              <FundTaskModal className="self-end" taskId={id} disabledState={!formatState(state) == "deployed"} forceUpdate={setForceUpdate}/>
-              <RegisterTaskModal className="self-end" taskId={id} disabledState={data.amWorker || !formatState(state) == "deployed"} forceUpdate={setForceUpdate}/>
+              {/* FundtaskModal: disable 👇🏻 also if fundingCompleted == true  or balance == 0*/}
+              <FundTaskModal taskId={id} disabledState={!formatState(state) == "deployed"} forceUpdate={setForceUpdate}/>
+              <RegisterTaskModal taskId={id} disabledState={data.amWorker || !formatState(state) == "deployed"} forceUpdate={setForceUpdate}/>
             </>: null}
+            { formatState(state) == "deployed" && data.amAdmin ?<>
+              {/* StopFundingModal: disable 👇🏻 also if fundingCompleted == true */}
+              <StopFundingModal taskId={id} disabledState={!formatState(state) == "deployed"} forceUpdate={setForceUpdate}/>
+            </>: null}
+            { formatState(state) == "deployed" ?<>
+              {/*state: started 👆🏻,  disable 👇🏻: check round + other things */}
+              <GetWeightsBtn taskId={id} disabledState={!formatState(state) == "deployed"} forceUpdate={setForceUpdate}/>
+            </>: null}
+            { formatState(state) == "deployed" ?<>
+              {/*state:started 👆🏻, disable 👇🏻: check round + other things + disable if worker has already committed the work*/}
+            <CommitWorkModal taskId={id} disabledState={!formatState(state) == "deployed"} forceUpdate={setForceUpdate}/>
+            </>: null}
+            <GetAdminFileBtn taskId={id} forceUpdate={setForceUpdate}/> {/* always available */}
+            {/* create button for getRanking when task is completed?? create button for claim reward? */}
           </div>
           
         </Card>

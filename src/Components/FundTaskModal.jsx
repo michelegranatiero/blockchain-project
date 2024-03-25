@@ -73,13 +73,11 @@ function FundTaskModal({ className = "", disabledState = false, taskId, forceUpd
   }
 
   function handleOpenChanging() {
-    if (open == false && !wallet.accounts.length > 0) {        
+    if (open == false && wallet.accounts.length == 0) {        
       setOpen(false);
       alert("Please, connect your account first.");
     }else setOpen(!open);
-
   }
-
 
 
   return (

@@ -15,7 +15,7 @@ function Filters({ className = "" }) {
   }, [filter]); */
   
   const stateFilters = ["deployed", "started", "completed"];
-  const roleFilters = ["issuer", "funder", "worker"];
+  const roleFilters = ["admin", "funder", "worker"];
 
   //const [filter, setFilter] = useState([/* ...stateFilters, ...roleFilters */]);
 

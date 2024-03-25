@@ -21,7 +21,7 @@ function NewTaskModal({forceUpdate}) {
   const [open, setOpen] = useState(false);
 
   function handleOpenChanging() {
-    if (open == false && !wallet.accounts.length > 0) {        
+    if (open == false && wallet.accounts.length == 0) {        
       setOpen(false);
       alert("Please, connect your account first.");
     }else setOpen(!open);

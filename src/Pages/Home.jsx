@@ -35,6 +35,7 @@ function Home() {
       try {
         let tasks = await getAllTasksInfo();
         setTasks(tasks.reverse());
+        
       } catch (error) {
         console.error("Error retriving tasks:", error);
       }
@@ -53,7 +54,7 @@ function Home() {
   function filterFunction(task) {        
     const state = formatState(Number(task.state));
     return (filters.includes(state.toLowerCase()) ||
-      (filters.includes("issuer") && task.amIssuer) ||
+      (filters.includes("admin") && task.amAdmin) ||
       (filters.includes("funder") && task.amFunder) ||
       (filters.includes("worker") && task.amWorker)
     );
