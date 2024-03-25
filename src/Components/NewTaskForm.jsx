@@ -59,13 +59,12 @@ function NewTaskForm({setOpenState, forceUpdate}) {
     setloadingBtn(true);
     
     //Upload file to IPFS
-    const ipfsRes = await sendToIPFS(values.file[0]);
+    /* const ipfsRes = await sendToIPFS(values.file[0]);
     if (!ipfsRes) {
       alert("Error uploading file to IPFS.");
       setloadingBtn(false);
       return;
-    }
-    return;
+    } */
 
     //pass ipfs hash to createTask when ready
     const response = await createTask(values.title, values.descr, values.numRounds, values.workersPerRound);
