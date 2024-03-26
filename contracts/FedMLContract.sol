@@ -3,11 +3,11 @@ pragma solidity >=0.8.2 <0.9.0;
 
 import "hardhat/console.sol";
 
-//import "https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/utils/structs/EnumerableSet.sol";
-import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
+import "https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/utils/structs/EnumerableSet.sol";
+// import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 
-//import "https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/utils/structs/EnumerableMap.sol";
-import "@openzeppelin/contracts/utils/structs/EnumerableMap.sol";
+import "https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/utils/structs/EnumerableMap.sol";
+// import "@openzeppelin/contracts/utils/structs/EnumerableMap.sol";
 
 /* Note that in a string each character is a byte.
  So make string size multiple of 32 bytes (because of the 256 bit slot) if possible. Also in "require" statament.
@@ -27,21 +27,21 @@ Because in public functions, Solidity immediately copies array arguments to memo
 
 contract FedMLContract {
 
-    using EnumerableSet for EnumerableSet.AddressSet;
-    using EnumerableSet for EnumerableSet.UintSet;
     using EnumerableMap for EnumerableMap.AddressToUintMap;
 
-    event Selected(uint taskId, address[] workers, uint roundNumber);
+    event NewFunding(uint taskId, uint numFunders, uint updatedBalance, uint value);
     event NeedRandomness(uint taskId, uint16 numberOfSeeds, uint16 upperBound);
+    event Selected(uint taskId, address[] workers, uint roundNumber);
     event RoundStarted(uint taskId, uint roundNumber);
     event TaskEnded(uint taskId);
-    event NewFunding(uint taskId, uint numFunders, uint updatedBalance, uint value);
-
     event Deployed(uint taskId);
 
-    enum State {DEPLOYED, STARTED, COMPLETED}
+    enum State {DEPLOYED, STARTED, COMPLETED} // willing can be removed and use implicit states
+
+    //address oracle;
 
     struct Round {
+        // and consider the fact that each round is made by the same number of workers, so we can select for each round workersPerRound directly from the array
         // we coudld transform all the following arrays into mappings index -> value
         //order this list in a proper way to save gas fee (evm memory slots are made by 256 bits)
         // uint16 commitCount;
@@ -52,116 +52,50 @@ contract FedMLContract {
         string[] committedWorks; //this should be converted (to byte32)
     }
 
-
     struct Task {
         //order this list in a proper way to save gas fee
         // (evm memory slots are made by 256 bits)
         uint id; //32 bytes
-        string title; //32 bytes
-        string description; //32 bytes
+        bytes32 title; //32 bytes
+        bytes32 description; //32 bytes
         address admin; //20 bytes
         uint16 numberOfRounds; //2 bytes
-        //uint16 workersRequired;
         uint16 workersPerRound; //2 bytes 
-
-        State state; //1 bytes 
-
-        uint16[] seeds;
-
+        State state; //1 bytes
         bool fundingCompleted; // 1 bytes
-        //bool registeringCompleted;
-
         address[] registeredWorkers;
-
         Round[] rounds;
-        //uint16 currentRound; // we can get rid of it because it is equivalent to calling rounds.length
     }
  
-    /* uint public idCounter; // = 0; // counter of tasks IDs 
-                           there is really no need to initialize the variable, it is 0 by default (saves gas) 
-                           (why we need this variable? Couldn't we use the length method to check the length of the array "taskList"?)*/
-
-
-    //this is sent to the workers of the first round
-    //bytes32 firstRoundWork; // can this thing be optimized??? otherwise check the immutable keyword
-
     mapping (uint taskId => EnumerableMap.AddressToUintMap funderMap) taskFundersMap;
-
-    mapping (uint taskId => EnumerableSet.AddressSet selectedWorkers) selectedWorkersMap;
 
     Task[] private taskList;
 
-    // convert strings into bytes32
-    //function stringToBytes32(string memory str) internal pure returns (bytes32 result) {
-        // assembly code helps us to save gas
-        //assembly {
-            //result := mload(add(str, 32))
-            //}
-    //}
-
     function deployTask(
-        string calldata _title,
-        string calldata _description, // IPFS (?)
+        bytes32 _title,
+        bytes32 _description,
         uint16 _numberOfRounds,
         uint16 _workersPerRound
-        //uint16 _workersRequired
         ) external {
-        //require(_workersRequired >= _numberOfRounds);
         require(_workersPerRound > 1);
         require(_numberOfRounds > 1);        
-        require(bytes(_title).length <= 32, "Title too long");
-        require(bytes(_description).length <= 32, "Description too long");
+        require(_title.length <= 32, "Title too long");
+        require(_description.length <= 32, "Description too long");
         Task storage task = taskList.push();
-        //task.id = idCounter;//taskList.length;
         task.title = _title;
         task.description = _description;
         task.admin = msg.sender;
         task.numberOfRounds = _numberOfRounds;
-        //task.workersRequired = _workersRequired;
-        task.workersPerRound = _workersPerRound; /*_workersRequired/_numberOfRounds; /* the integer division rounds down the to the nearest integer 
-        if the nuber of rounds is not a multiple of workersRequired we'll have a number of workers per rounds which sum will give
-        us a number that is lower than the workersRequred, throwing away one workers (wrong behaviour!) */
+        task.workersPerRound = _workersPerRound;
         task.fundingCompleted = false;
-        //task.registeringCompleted = false;
         task.state = State.DEPLOYED;
 
-        //deployedTasks.add(task.id);
-        //taskList.push(task);
-
         emit Deployed(task.id);
-
-        /*++idCounter; // increment first and then return is more efficient than first return and then increment
-                        because in that case we have a value more in the stack to preserve (compiler level optimization) */
     }
-
-    /* function getAllTasks() public view returns (bytes32[] memory) {
-        //Task[] memory tasks;
-        //return deployedTasks._inner._values;
-        
-
-        for (uint i = 0; i < idCounter; increment) 
-        {
-            
-        };
-    } */
 
     modifier validTask(uint _taskId) {
-        require(_taskId < taskList.length); // idCounter == taskList.length
+        require(_taskId < taskList.length);
         _;
-    }
-
-    modifier currentRoundWorker(uint _taskId) {
-        Task storage task = taskList[_taskId]; //caching
-        uint currentRound = task.rounds.length-1;
-        bool isRoundWorker = false;
-        for (uint i=0; i<task.rounds[currentRound].workers.length; i++) {
-            if(task.rounds[currentRound].workers[i] == msg.sender) {
-                isRoundWorker = true;
-                break;
-            }
-        }
-        require(isRoundWorker);
-        _;       
     }
 
     // ------------------------------------------- GETTERS -------------------------------------------
@@ -181,21 +115,23 @@ contract FedMLContract {
     function getFundsAmount(uint _taskId) validTask(_taskId) external view returns (uint) {
         uint totalFunds = 0;
         EnumerableMap.AddressToUintMap storage funderMap = taskFundersMap[_taskId]; 
-        
         for (uint i = 0; i < funderMap.length(); i++) {
             (, uint amount) = funderMap.at(i);
             totalFunds += amount;
         }
-        
         return totalFunds;
     }
 
-    function getSelectedWorkers(uint _taskId) validTask(_taskId) external view returns (address[] memory) {
-        return selectedWorkersMap[_taskId].values(); //check return type of .values() (should be bytes32[])
+    // previously getSelectedWorkers
+    function getRegisteredWorkers(uint _taskId) validTask(_taskId) external view returns (address[] memory) {
+        Task storage task = taskList[_taskId];
+        require(task.state != State.DEPLOYED, "Worker not selected yet!");
+        return task.registeredWorkers;
+        //return selectedWorkersMap[_taskId].values(); //check return type of .values() (should be bytes32[])
     }
 
     // Return the role of the sender within the specified task.
-    // The returned value is a triple of bools, respectively indicating if it is a funder, a worker and an admin. 
+    // The returned value is a triple of bools, respectively indicating if it is a funder, a worker and an admin of the task. 
     function getRoles(uint _taskId) validTask(_taskId) external view returns (bool funder, bool worker, bool admin) {
         return(
             taskFundersMap[_taskId].contains(msg.sender),
@@ -203,25 +139,6 @@ contract FedMLContract {
             taskList[_taskId].admin == msg.sender
         );
     }
-
-    //return also funding amount?
-    //function amFunder(uint _taskId) validTask(_taskId) public view returns (bool) {
-    //    return taskFundersMap[_taskId].contains(msg.sender);
-    //maybe return only the amount if it is >0 it is a founder, if it is =0 it is not 
-    //}
-
-    //function amWorker(uint _taskId) validTask(_taskId) public view returns (bool) {
-        //return selectedWorkersMap[_taskId].contains(msg.sender);
-        //address[] memory regWorkers = taskList[_taskId].registeredWorkers; 
-        // temporary variable regWorkers not needed, we can directly insert the code below to save gas
-        //return isAlreadyWorker(msg.sender, taskList[_taskId].registeredWorkers);
-    //}
-
-    //function amadmin(uint _taskId) validTask(_taskId) public view returns (bool) {
-        //return taskList[_taskId].admin == msg.sender;
-    //}
-
-
 
     // ------------------------------------------- PROCESS -------------------------------------------
     
@@ -244,9 +161,9 @@ contract FedMLContract {
     }
 
     function stopFunding(uint _taskId) validTask(_taskId) external {
-        Task storage task = taskList[_taskId]; //caching
+        Task storage task = taskList[_taskId];
         require(msg.sender == task.admin); // only the admin can stop the funding
-        // or the oracle if we want to set a timer / funding treshold
+        // or the oracle if we want to set a timer/funding treshold
         require(task.fundingCompleted == false); // the funding wasn't stopped yet
         task.fundingCompleted = true;
         //uint16 workersRequired = task.workersPerRound * task.numberOfRounds; // removed to save gas, added comment instead
@@ -260,16 +177,15 @@ contract FedMLContract {
     }
 
     //helper function
-    function isAlreadyWorker(address worker, address[] memory regWorkers) internal pure returns(bool){
-        for (uint i=0; i<regWorkers.length; i++) 
-        {
+    function isAlreadyWorker(address worker, address[] memory regWorkers) internal pure returns(bool) {
+        for (uint i=0; i<regWorkers.length; i++) {
             if (regWorkers[i] == worker) return true;
         }
         return false;
     }
 
     function register(uint _taskId) validTask(_taskId) external {
-        Task storage task = taskList[_taskId]; //caching
+        Task storage task = taskList[_taskId];
         uint numRegWorkers = task.registeredWorkers.length; //caching
         uint16 workersPerRound = task.workersPerRound; //caching
         uint16 numberOfRounds = task.numberOfRounds; //caching
@@ -278,9 +194,8 @@ contract FedMLContract {
         //check if address is already registered
         require(!isAlreadyWorker(msg.sender, task.registeredWorkers));
         task.registeredWorkers.push();
-        task.registeredWorkers[numRegWorkers] = msg.sender;
-
-        if (numRegWorkers+1 == workersRequired) {
+        task.registeredWorkers[numRegWorkers] = msg.sender; // no need to decrease by 1 because refers to the value before the push
+        if (numRegWorkers+1 == workersRequired) { // numRegWorkers refers to the value before the push, so the +1 it's because of the push above
             // task.registeringCompleted = true; // can be removed, is equivalent to perform the check task.registeredWorkers.length == task.workersRequired)
             if (task.fundingCompleted) {
                 emit NeedRandomness(_taskId, numberOfRounds, workersPerRound*10);
@@ -288,115 +203,138 @@ contract FedMLContract {
         }
     }
 
-    // function setRandomness(uint _taskId, uint16[] memory _seeds) validTask(_taskId) external {
     function setRandomness(uint _taskId, uint16[] calldata _seeds) validTask(_taskId) external {
         //require(msg.sender == oracle); //only the oracle can set the seeds
         Task storage task = taskList[_taskId];
-        //Registering completed
-        require(task.registeredWorkers.length == task.workersPerRound*task.numberOfRounds);
-        require(task.fundingCompleted);
-        require(task.seeds.length == 0); //seeds were not set yet
-        task.seeds = _seeds;
+        uint numOfRegWorkers = task.registeredWorkers.length;
+        uint workersRequired = task.workersPerRound*task.numberOfRounds;
+        require(_seeds.length == workersRequired, "Seeds are not enough!");
+        require(numOfRegWorkers == workersRequired); //Registering completed
+        require(task.fundingCompleted); //The funding is stopped
+        require(task.state == State.DEPLOYED); //the training wasn't started yet
+        //require(task.seeds.length == 0); //seeds were not set yet
+        //task.seeds = _seeds;
+        shuffleWorkers(_taskId, _seeds);
         startRound(_taskId);
     }
 
+    function shuffleWorkers(uint _taskId, uint16[] calldata _seeds) internal {
+        // Shuffle the registeredWorkers array
+        // Since we know the current round and the number of workers per round then
+        // we can refer to the corresponding portion of the array registeredWorkers for the single round 
+        Task storage task = taskList[_taskId];        
+        uint numOfRegWorkers = task.registeredWorkers.length; //number of registered workers to the task _taskId
+        for (uint i = 0; i < numOfRegWorkers; i++) {
+            uint j = _seeds[i] % numOfRegWorkers;
+            address worker = task.registeredWorkers[j];
+            task.registeredWorkers[j] = task.registeredWorkers[i];
+            task.registeredWorkers[i] = worker;
+        }
+    }
+ 
     function startRound(uint _taskId) internal {
-        Task storage task = taskList[_taskId]; //caching
-        // the requires are not needed: startRound is an internal function, the requires of other functions are enoguth
-        //uint16 workersRequired = task.workersPerRound*task.numberOfRounds;
-        //require(task.fundingCompleted == true);
-        //require(task.registeredWorkers.length == workersRequired); //taskList[_taskId].registeringCompleted = true
+        Task storage task = taskList[_taskId];
         task.state = State.STARTED;
+        uint currentRound = task.rounds.length; //caching
         task.rounds.push(); //task.rounds.length increments by 1        
-        uint currentRound = task.rounds.length-1; // caching
-        // Starting round number i, where i is from 0 to numberOfRounds-1
-        console.log("Starting round number %s", currentRound); //task.currentRound
-        selectWorkers(_taskId, task.seeds[currentRound]); //task.currentRound
-        //if (currentRound == 0) { //task.currentRound == 0
-        //    emit RoundStarted(_taskId, currentRound); //task.currentRound
-        //} else {
-        //Start next round and give to the workers the work from previous round
-        console.log("Sending previous work...");
-            //uint16 workersPerRound = task.workersPerRound;
-            // the loop maybe can be optimized (?)
-            for (uint16 i = 0; i < task.workersPerRound; i++) { //workersPerRound
-                console.log(task.rounds[currentRound-1].committedWorks[i]); //task.currentRound-1
-            }
+        // Starting round number currentRound (where 0 <= currentRound <= numberOfRounds-1)
+        console.log("Starting round number %s", currentRound);
+        //Start next round and give to the workers the work from the previous round
+        if (currentRound > 0) {
+            console.log("Sending previous works...");
+                //uint16 workersPerRound = task.workersPerRound;
+                // the loop maybe can be optimized (?)
+                for (uint16 i = 0; i < task.workersPerRound; i++) {
+                    console.log(task.rounds[currentRound-1].committedWorks[i]);
+                }
+        }
         emit RoundStarted(_taskId, currentRound); //task.rounds[task.currentRound-1].committedWorks
         //}
     }
-
-    function selectWorkers(uint _taskId, uint16 seed) internal {
-        console.log("Selecting workers...");
-        Task storage task = taskList[_taskId]; //caching
+    
+    //function selectWorkers(uint _taskId, uint16 seed) internal {
+        //console.log("Selecting workers...");
+        //Task storage task = taskList[_taskId]; //caching
         //uint16 workersPerRound = task.workersPerRound; //caching?? A: No need, it is used just once in this function!
-        uint currentRound = task.rounds.length-1;
-        // the loop maybe can be optimized (?)
-        for (uint16 i=0; i < task.workersPerRound; i++) {
+        //uint currentRound = task.rounds.length-1;
+        // Shuffle the registeredWorkers array
+        // Since we know the current round and the workers per round we refer to subarrays of the registeredWorkers array for the single round      
+        //uint numOfRegWorkers = task.registeredWorkers.length; // number of registered workers to the task taskId
+
+        //for (uint16 i=0; i < task.workersPerRound; i++) {
+
             //task.rounds[currentRound].ranking.push(); //task.currentRound // I moved it into commitWork()
-            task.rounds[currentRound].workers.push(); //task.currentRound
+            //task.rounds[currentRound].workers.push(); //task.currentRound
             //task.rounds[currentRound].committedWorks.push(); //added later
-            uint16 offset = 0;
-            uint numOfRegWorkers = task.registeredWorkers.length; // number of registered workers to the task taskId
-            address worker = task.registeredWorkers[(seed + i) % numOfRegWorkers]; // task.registeredWorkers.length
+            
+            //uint16 offset = 0;
+            //uint numOfRegWorkers = task.registeredWorkers.length; // number of registered workers to the task taskId
+            //address worker = task.registeredWorkers[(seed + i) % numOfRegWorkers]; // task.registeredWorkers.length
             //while (task.selectedWorkers.contains(worker)) {
-            while (selectedWorkersMap[_taskId].contains(worker)){ // Should cache selectedWorkersMap[_taskId] here, maybe
-                offset++;
-                worker = task.registeredWorkers[(seed + i + offset) % numOfRegWorkers]; // task.registeredWorkers.length
-            }
-            task.rounds[currentRound].workers[i] = worker; //task.currentRound
-            selectedWorkersMap[_taskId].add(worker);
-            console.log("Selected worker at address: %s", worker);
-        }
-        emit Selected(_taskId ,task.rounds[currentRound].workers, currentRound); //task.currentRound           
-    }
+            //while (selectedWorkersMap[_taskId].contains(worker)) { // Should cache selectedWorkersMap[_taskId] here, maybe
+                //offset++;
+                //worker = task.registeredWorkers[(seed + i + offset) % numOfRegWorkers]; // task.registeredWorkers.length
+            //}
 
-    //function commitWork(uint _taskId, string memory work, uint256[] memory votes) validTask(_taskId) external {
-    function commitWork(uint _taskId, string calldata work, uint256[] calldata votes) validTask(_taskId) currentRoundWorker(_taskId) external {        
-        require(taskList[_taskId].state == State.STARTED); // task not completed yet
-        Task storage task = taskList[_taskId]; //caching
+            //task.rounds[currentRound].workers[i] = worker; //task.currentRound
+            //selectedWorkersMap[_taskId].add(worker);
+            //console.log("Selected worker at address: %s", worker);
+        //}
+        //emit Selected(_taskId ,task.rounds[currentRound].workers, currentRound); //task.currentRound           
+    //}
+
+    function commitWork(uint _taskId, string calldata work, uint256[] calldata votes) validTask(_taskId) external {        
+        Task storage task = taskList[_taskId];     
+
+        require(task.state == State.STARTED); //task not completed yet
+
         uint currentRound = task.rounds.length-1;
-        //Only selected workers can call this method
 
-        // TO DO: check worker nella lista dei worker di quel round
-        // TO DO: check worker se ha già committato
-
-        /*bool isWorkerSelected = false;
-        for (uint i=0; i<task.rounds[currentRound].workers.length; i++) {
-            if(task.rounds[currentRound].workers[i] == msg.sender) {
+        //check if the worker was selected, i.e. that it is in the proper portion of the array registeredWorkers after the shuffling
+        bool isWorkerSelected = false;
+        // the loop can be optimized, todo change it into a while loop
+        for (uint i = currentRound*task.workersPerRound; i < currentRound*task.workersPerRound+task.workersPerRound; i++) {
+            if(task.registeredWorkers[i] == msg.sender) {
                 isWorkerSelected = true;
                 break;
             }
         }
-        require(isWorkerSelected);*/
+        require(isWorkerSelected);
 
-        // GROSSO PROBLEMA CON committedWorks e workers, ATTENZIONE !!!
+        // check if the worker has already committed
+        bool hasCommitted = false;
+        for (uint i = 0; i < task.rounds[currentRound].workers.length; i++) {
+            if(task.rounds[currentRound].workers[i] == msg.sender) {
+                hasCommitted = true;
+                break;
+            }
+        }
+        require(!hasCommitted);
 
-        
-        //require(selectedWorkersMap[_taskId].contains(msg.sender)); // (???)
-        //Save the work done
         uint commitCount = task.rounds[currentRound].committedWorks.length;
-        task.rounds[currentRound].committedWorks.push(); //task.currentRound
-        task.rounds[currentRound].ranking.push(); //task.currentRound
-        task.rounds[currentRound].workers[commitCount] = msg.sender; //task.currentRound
-        task.rounds[currentRound].committedWorks[commitCount] = work; //task.currentRound
+
+        task.rounds[currentRound].workers.push();
+        task.rounds[currentRound].committedWorks.push();
+        task.rounds[currentRound].ranking.push();
+        task.rounds[currentRound].workers[commitCount] = msg.sender;
+        task.rounds[currentRound].committedWorks[commitCount] = work;
         
         //replace task.rounds[currentRound].committedWorks[commitCount] with work (line below)
-        console.log("Worker %s submitted %s", msg.sender, task.rounds[currentRound].committedWorks[commitCount]); //task.currentRound
-        commitCount++; //task.currentRound
-        //If it is not the first round, update the ranking of the previous round
-        if (currentRound != 0) { //task.currentRound
+        console.log("Worker %s submitted %s", msg.sender, task.rounds[currentRound].committedWorks[commitCount]);
+        commitCount++;
+        //If it is not the first round then update the ranking of the previous round
+        if (currentRound != 0) {
             // update previous round ranking
             //updatePreviousRoundRanking(_taskId, votes);
             //the i-th worker of the previous round receives votes[i] attestations (points?)
             for (uint16 i = 0; i < votes.length; i++) {
-                task.rounds[currentRound-1].ranking[i] += votes[i]; //task.currentRound
+                task.rounds[currentRound-1].ranking[i] += votes[i];
             }
         }
         
         //If it was the last commitment for the current round, end the round
-        if (commitCount == task.workersPerRound) { //task.currentRound
-            console.log("All workers submitted their work for round %s", currentRound); //task.currentRound
+        if (commitCount == task.workersPerRound) {
+            console.log("All workers submitted their work for round %s", currentRound);
             endRound(_taskId);
         }
     }
@@ -414,24 +352,25 @@ contract FedMLContract {
 
     function endRound(uint _taskId) internal {
         Task storage task = taskList[_taskId]; //caching
-        uint currentRound = task.rounds.length-1;
+        uint currentRound = task.rounds.length; // -1 (?)
         // if the current round is the last one then terminate the task
-        if (currentRound == task.numberOfRounds) {
-            // End task
-            endTask(_taskId);
+        if (currentRound == task.numberOfRounds) { 
+            // END TASK
+            //assign rewards
+            taskList[_taskId].state = State.COMPLETED;
+            emit TaskEnded(_taskId);
         }
         else {
-            //task.currentRound++; //task.rounds.length increments by 1
             startRound(_taskId);
         }
-        
     }
 
-    function endTask(uint _taskId) internal {
+    // EMBEDDED INTO endRound()
+    //function endTask(uint _taskId) internal {
         //assign rewards
-        taskList[_taskId].state = State.COMPLETED;
-        emit TaskEnded(_taskId);
-    }
+    //    taskList[_taskId].state = State.COMPLETED;
+    //    emit TaskEnded(_taskId);
+    //}
 
     function getRanking(uint _taskId) validTask(_taskId) external view returns (uint256[][] memory) {
         Task storage task = taskList[_taskId];
