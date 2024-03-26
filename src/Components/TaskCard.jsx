@@ -73,8 +73,7 @@ function TaskCard({ forceUpd, id, title, description, state, regWorkers,}) {
             <CardHeader className="sm:pr-0">
               <div className="flex gap-2 items-center">
                 <Badge variant="outline" className="text-sm"> 
-                  <span className="text-muted-foreground">#</span>
-                  {String(id)}
+                  <span className="text-muted-foreground">#</span>{String(id)}
                 </Badge>
                 <CardTitle className="line-clamp-2 sm:line-clamp-1">{title}</CardTitle>
               </div>
@@ -87,16 +86,15 @@ function TaskCard({ forceUpd, id, title, description, state, regWorkers,}) {
             </ScrollArea>
             <CardFooter className="sm:pr-0 pb-0 sm:pb-6">
               <div className="flex flex-wrap gap-2 w-full justify-between">
-                  <div className="flex flex-nowrap items-center text-sm text-muted-foreground">State:&nbsp;<Badge>{capitalizeFirstChar(formatState(state))}</Badge></div>
+                  <div className="flex flex-nowrap items-center text-sm text-muted-foreground">
+                    State:&nbsp;<Badge>{capitalizeFirstChar(formatState(state))}</Badge>
+                  </div>
                   <div className="flex flex-nowrap gap-2">
                     {data.amAdmin ? <Badge variant="secondary"> Admin </Badge> : null}
                     {data.amFunder ? <Badge variant="secondary"> Funder </Badge> : null}
                     {data.amWorker ? <Badge variant="secondary"> Worker</Badge> : null}
                   </div>
-                  
-                 
               </div>
-              
             </CardFooter>
           </div>
           
