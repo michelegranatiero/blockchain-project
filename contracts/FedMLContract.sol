@@ -81,8 +81,8 @@ contract FedMLContract {
         Task storage task = taskList.push();
         task.id = taskList.length-1;
         task.admin = msg.sender;
-        task.hashPart1 = _hash1;
-        task.hashPart2 = _hash2;
+        task.title = _title;
+        task.description = _description;
         task.numberOfRounds = _numberOfRounds;
         task.workersPerRound = _workersPerRound;
         task.fundingCompleted = false;
