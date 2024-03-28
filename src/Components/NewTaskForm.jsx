@@ -36,7 +36,7 @@ const taskSchema = z.object({
 
 function NewTaskForm({setOpenState, forceUpdate}) {
 
-  const { createTask, sendToIPFS } = useWeb3();
+  const { createTask } = useWeb3();
 
   const [loadingBtn, setloadingBtn] = useState(false);
 
@@ -58,16 +58,7 @@ function NewTaskForm({setOpenState, forceUpdate}) {
 
     setloadingBtn(true);
     
-    //Upload file to IPFS
-    /* const ipfsRes = await sendToIPFS(values.file[0]);
-    if (!ipfsRes) {
-      alert("Error uploading file to IPFS.");
-      setloadingBtn(false);
-      return;
-    } */
-
-    //pass ipfs hash to createTask when ready
-    const response = await createTask(values.title, values.descr, values.numRounds, values.workersPerRound);
+    const response = await createTask(values.title, values.descr, values.numRounds, values.workersPerRound, values.file[0]);
     if (response){
       setOpenState(false);
       alert("Task created successfully");

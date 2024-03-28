@@ -46,12 +46,12 @@ function TaskCard({ forceUpd, id, title, description, state, regWorkers,}) {
       /* let details = await getTask(id);
       let funders = await getFunderList(id);
       let funds = await getFunds(id);
-      let selWorkers = await getSelWorkerList(id); */
+      let regWorkers = await getRegWorkerList(id); */
       let roles = await getRoles(id);
       setData(prevData => ({ ...prevData, 
         /* details: details, 
         funders: funders, 
-        selWorkers: selWorkers,
+        regWorkers: regWorkers,
         funds: funds, */
         amFunder: roles.funder,
         amWorker: roles.worker,

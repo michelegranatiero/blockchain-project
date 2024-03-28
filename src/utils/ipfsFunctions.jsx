@@ -1,25 +1,27 @@
-// Upload file to IPFS
-export const sendToIPFS = async (file) => {
+export const fileToBase64 = async (file) => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file); // convert file to base64 string (with prefix "data: MIME type") 
+    
+    // When the file is loaded, resolve the promise
+    /* reader.onload is an event handler triggered when the reading operation
+      initiated by reader.readAsDataURL() is complete */
+    reader.onload = function() {
+      resolve(reader.result);
+    };
+
+    reader.onerror = function(error) {
+      reject(error);
+    };
+  });
+};
+
+
+// Upload file to IPFS as JSON
+export const sendToIPFS = async (fileObj, name) => {
   try {
-    const result = await new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.readAsDataURL(file); // convert file to base64 string (with prefix "data: MIME type") 
-      
-      // When the file is loaded, resolve the promise
-      /* reader.onload is an event handler triggered when the reading operation
-        initiated by reader.readAsDataURL() is complete */
-      reader.onload = function() {
-        const myJson = JSON.stringify({ name: file.name, content: reader.result, type: file.type });
-        resolve(myJson);
-      };
-
-      reader.onerror = function(error) {
-        reject(error);
-      };
-    });
-
     // Prepare json object (only pinataContent will be retrived from IPFS, the rest is metadata)
-    const dataObj = { pinataContent: result, pinataMetadata: { name: file.name }, pinataOptions: { cidVersion: 1 } };
+    const dataObj = { pinataContent: JSON.stringify(fileObj), pinataMetadata: { name: name }, pinataOptions: { cidVersion: 0 } };
     const dataJson = JSON.stringify(dataObj);
 
     const options = {
@@ -44,38 +46,50 @@ export const sendToIPFS = async (file) => {
   }
 }
 
+
+// Download JSON file from IPFS
 export const fetchFromIPFS = async (cid) => {
-  await fetch(`https://gateway.pinata.cloud/ipfs/${cid}`, {
-    method: 'GET',
-  })
-  .then((response) => response.json())
-  .then(async (jsonFile) => {
-
-    const obj = JSON.parse(jsonFile); // name, content, type
-    
-    const file =  await fetch(obj.content).then(response => response.blob()).then(blob => {
-      return new File([blob], obj.name, {type: obj.type});
+  try {
+    const response = await fetch(`https://gateway.pinata.cloud/ipfs/${cid}`, {
+      method: 'GET',
     });
-
     
-    const url = window.URL.createObjectURL(
-      file,
-    );
+    if (!response.ok) {
+      throw new Error('Failed to fetch data from IPFS');
+    }
+
+    const jsonFile = await response.json();
+    const obj = JSON.parse(jsonFile);
     
-    const link = document.createElement('a');
-    link.href = url;
-    link.setAttribute(
-      'download',
-      file.name,
-    );
+    return obj;
+  } catch (error) {
+    console.error('Error fetching data from IPFS:', error);
+  }
+};
 
-    // Append to html link element page
-    document.body.appendChild(link);
 
-    // Start download
-    link.click();
-
-    // Clean up and remove the link
-    link.parentNode.removeChild(link);
+export const downloadFile = async (obj, name, type) => {
+  const file =  await fetch(obj).then(response => response.blob()).then(blob => {
+    return new File([blob], name, {type: type});
   });
+
+  const url = window.URL.createObjectURL(
+    file,
+  );
+  
+  const link = document.createElement('a');
+  link.href = url;
+  link.setAttribute(
+    'download',
+    file.name,
+  );
+
+  // Append to html link element page
+  document.body.appendChild(link);
+
+  // Start download
+  link.click();
+
+  // Clean up and remove the link
+  link.parentNode.removeChild(link);
 }

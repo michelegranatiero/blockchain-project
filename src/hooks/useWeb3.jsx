@@ -1,8 +1,11 @@
 import { createContext, useContext, useEffect, useState } from 'react';
 import { useMetaMask } from './useMetaMask';
 
+import { Buffer } from 'buffer';
+import { Web3 } from 'web3';
+
 import { contractAddress, contractAbi} from '@/utils/constants';
-import { sendToIPFS, fetchFromIPFS } from '@/utils/ipfsFunctions';
+import { sendToIPFS, fetchFromIPFS, fileToBase64 } from '@/utils/ipfsFunctions';
 const Web3Context = createContext({})
 
 export const Web3ContextProvider = ({children}) => {
@@ -20,16 +23,57 @@ export const Web3ContextProvider = ({children}) => {
   }, [web3]);
 
 
-  const createTask = async (title, descr, numRounds, workersPerRound) => {
+  const createTask = async (title, descr, numRounds, workersPerRound, file) => {
     if (!contract) {
       console.error("Contract instance is not available.");
       return false;
     }
     try {
-      const receipt = await contract.methods
-        .deployTask(title, descr, numRounds, workersPerRound)
+
+      const fileB64 = await fileToBase64(file);
+      const fileObj = { name: file.name, content: fileB64, type: file.type }; //JSON.stringify ??
+      const ipfsFileHash = await sendToIPFS(fileObj, file.name);
+      if (!ipfsFileHash) {
+        alert("Error uploading file to IPFS.");
+        return;
+      }      
+
+      const mainObj = {title: title, description: descr, file: ipfsFileHash};
+      const ipfsMainHash = await sendToIPFS(mainObj, title);
+      if (!ipfsMainHash) {
+        alert("Error uploading to IPFS.");
+        return;
+      }
+
+      //encode to ascii
+      const ascii = []
+      for (let i = 0; i < ipfsMainHash.length; i++) {
+        ascii.push(ipfsMainHash.charCodeAt(i));
+      }
+      //console.log("ascii encode" ,[...ascii]); //ascii
+      
+
+      //from ascii to base64
+      const base64str = Buffer.from(ascii).toString('base64');
+      console.log("base64 string", base64str.length, base64str);
+
+      // split in 2 parts and convert to hex
+      const part1 = Web3.utils.asciiToHex(base64str.slice(0, 32));
+      const part2 = Web3.utils.asciiToHex(base64str.slice(32, 64));
+      console.log(part1, part2);
+
+
+      // deploy task
+      const receipt = await contract.methods  // remove await if you want to use events below
+        .deployTask(part1, part2, numRounds, workersPerRound)
         .send({from: wallet.accounts[0]});
       console.log("Transaction receipt:", receipt);
+
+      /* receipt.on('transactionHash', (hash) => {console.log(hash)});
+      receipt.on('receipt', (receipt) => {console.log(receipt)});
+      receipt.on('confirmation', (confirmationNumber, receipt) => {console.log(confirmationNumber, receipt)});
+      receipt.on('error', (error, receipt) => {console.log(error, receipt)}); */
+
       //console.log(receipt.events.Deployed.returnValues.taskAddress)
       return true;
     } catch (error) {
@@ -63,8 +107,27 @@ export const Web3ContextProvider = ({children}) => {
         tasks[i].amFunder = roles.funder;
         tasks[i].amWorker = roles.worker;
         tasks[i].amAdmin = roles.admin;
+
+
+        //decode bytes32 to ipfs hash
+        let part1 = Web3.utils.hexToAscii(tasks[i].hashPart1);
+        let part2 = Web3.utils.hexToAscii(tasks[i].hashPart2);
+        let hash = part1 + part2;
+        const ipfsHash = Buffer.from(hash, 'base64').toString('ascii');
+
+
+        //fetch from ipfs
+        const ipfsObj = await fetchFromIPFS(ipfsHash);
+        console.log(ipfsObj);
+        
+        
+        tasks[i].title = ipfsObj.title;
+        tasks[i].description = ipfsObj.description;
+        tasks[i].file = ipfsObj.file;
+        
       }
     }
+    
     return tasks;
   }
 
@@ -110,21 +173,6 @@ export const Web3ContextProvider = ({children}) => {
       return funds
     } catch (error) {
       console.error("Error retriving funds:", error);
-    }
-  }
-  
-  
-  // DA CONTROLLARE (SU SMART CONTRACT)
-  const getSelWorkerList = async (taskId) => {
-    if (!contract) {
-      console.error("Contract instance is not available.");
-      return;
-    }
-    try {
-      const selWorkers = await contract.methods.getSelectedWorkers(taskId).call();
-      return selWorkers
-    } catch (error) {
-      console.error("Error retriving selected workers:", error);
     }
   }
   
@@ -257,15 +305,14 @@ export const Web3ContextProvider = ({children}) => {
         web3,
         contract,
         globFilters: [filters, setFilters],
-        sendToIPFS,
-        fetchFromIPFS,
+        /* sendToIPFS,
+        fetchFromIPFS, */
         createTask,
         getAllTasks,
         getAllTasksInfo,
         getTask,
         getFunderList,
         getFunds,
-        getSelWorkerList,
         getRoles,
         fund,
         stopFunding,

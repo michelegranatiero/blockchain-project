@@ -21,7 +21,7 @@ import StopFundingModal from "@/Components/StopFundingModal";
 
 function Task() {
   const { wallet, contract, getTask, getFunderList, getFunds,
-     getSelWorkerList, getRoles} = useWeb3();
+     getRegWorkerList, getRoles} = useWeb3();
 
   const { id } = useParams();
 
@@ -44,13 +44,11 @@ function Task() {
       let details = await getTask(id);
       let funders = await getFunderList(id);
       let funds = await getFunds(id);
-      let selWorkers = await getSelWorkerList(id);
       let roles = await getRoles(id);
       
       setTask(prevDetails => ({ ...prevDetails, 
         details: details, 
-        funders: funders, 
-        selWorkers: selWorkers,
+        funders: funders,
         funds: funds,
         amFunder: roles.funder,
         amWorker: roles.worker,
@@ -95,7 +93,7 @@ function Task() {
           <hr />
           <p>Funds: {String(task.funds)} (wei)</p>
           <p>Funders: {String(task.funders)}</p>
-          <p>Selected Workers: {String(task.workers)}</p>
+          <p>Reg Workers: {String(task.details.registeredWorkers)}</p>
           <hr />
 
         </CardContent>
