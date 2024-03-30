@@ -48,7 +48,7 @@ contract FedMLContract {
         // The following three arrays are synchronized meaning that workers[i] hasstatetask. committed committedWorks[i] and is ranked ranking[i]
         address[] workers; // use the same reasoning of ranking, so store instead of an address an unit16 (?)
         uint256[] ranking; // a smaller uint (?). A: workersPerRound is uint16, so uint256[] can become uint16[] 
-        string[] committedWorks; //this should be converted (to byte32)
+        bytes32[] committedWorks; //this should be converted (to byte32)
     }
 
     struct Task {
@@ -68,7 +68,9 @@ contract FedMLContract {
  
     mapping (uint taskId => EnumerableMap.AddressToUintMap funderMap) taskFundersMap;
 
-    Task[] private taskList;
+    //Task[] private taskList;
+    uint public taskCounter = 0;
+    mapping (uint taskId => Task task) taskList;
 
     function deployTask(
         bytes32 _hash1,
@@ -78,8 +80,10 @@ contract FedMLContract {
         ) external {
         require(_workersPerRound > 1);
         require(_numberOfRounds > 1);        
-        Task storage task = taskList.push();
-        task.id = taskList.length-1;
+        //Task storage task = taskList.push();
+        Task storage task = taskList[taskCounter];
+        //task.id = taskList.length-1;
+        task.id = taskCounter++; // is this way of incrementing correct?
         task.admin = msg.sender;
         task.hashPart1 = _hash1;
         task.hashPart2 = _hash2;
@@ -91,15 +95,16 @@ contract FedMLContract {
     }
 
     modifier validTask(uint _taskId) {
-        require(_taskId < taskList.length);
+        //require(_taskId < taskList.length);
+        require(_taskId < taskCounter);
         _;
     }
 
     // ------------------------------------------- GETTERS -------------------------------------------
 
-    function getAllTasks() external view returns (Task[] memory) {
+    /* function getAllTasks() external view returns (Task[] memory) {
         return taskList;
-    }
+    } */
     
     function getTask(uint _taskId) validTask(_taskId) external view returns (Task memory) {
         return taskList[_taskId];
@@ -119,13 +124,6 @@ contract FedMLContract {
         return totalFunds;
     }
 
-    // previously getSelectedWorkers
-    function getRegisteredWorkers(uint _taskId) validTask(_taskId) external view returns (address[] memory) {
-        Task storage task = taskList[_taskId];
-        require(task.state != State.DEPLOYED, "Worker not selected yet!");
-        return task.registeredWorkers;
-        //return selectedWorkersMap[_taskId].values(); //check return type of .values() (should be bytes32[])
-    }
 
     // Return the role of the sender within the specified task.
     // The returned value is a triple of bools, respectively indicating if it is a funder, a worker and an admin of the task. 
@@ -242,7 +240,7 @@ contract FedMLContract {
                 //uint16 workersPerRound = task.workersPerRound;
                 // the loop maybe can be optimized (?)
                 for (uint16 i = 0; i < task.workersPerRound; i++) {
-                    console.log(task.rounds[currentRound-1].committedWorks[i]);
+                    //console.log(task.rounds[currentRound-1].committedWorks[i]);
                 }
         }
         emit RoundStarted(_taskId, currentRound); //task.rounds[task.currentRound-1].committedWorks
@@ -280,7 +278,7 @@ contract FedMLContract {
         return committed;
     }
 
-    function commitWork(uint _taskId, string calldata work, uint256[] calldata votes) validTask(_taskId) external {        
+    function commitWork(uint _taskId, bytes32 workPart1, bytes32 workPart2, uint256[] calldata votes) validTask(_taskId) external {        
         Task storage task = taskList[_taskId];     
         
         require(task.state == State.STARTED); //task not completed yet
@@ -289,16 +287,17 @@ contract FedMLContract {
         require(votes.length == task.workersPerRound); // (???) problematico per il primo round
 
         uint currentRound = task.rounds.length-1;
-        uint commitCount = task.rounds[currentRound].committedWorks.length;
+        uint commitCount = task.rounds[currentRound].committedWorks.length/2;
 
         task.rounds[currentRound].workers.push();
         task.rounds[currentRound].committedWorks.push();
         task.rounds[currentRound].ranking.push();
         task.rounds[currentRound].workers[commitCount] = msg.sender;
-        task.rounds[currentRound].committedWorks[commitCount] = work;
+        task.rounds[currentRound].committedWorks[commitCount*2] = workPart1;
+        task.rounds[currentRound].committedWorks[commitCount*2+1] = workPart2;
         
         //replaced task.rounds[currentRound].committedWorks[commitCount] with work (line below)
-        console.log("Worker %s submitted %s", msg.sender, work);
+        //console.log("Worker %s submitted %s", msg.sender, workPart1, workPart2);
         commitCount++;
         //If it is not the first round then update the ranking of the previous round
         if (currentRound > 0) {
@@ -376,16 +375,18 @@ contract FedMLContract {
         return ranking;
     }
 
-    function getWork(uint _taskId) validTask(_taskId) external view returns (string[][] memory) {
+    // this fetches the work of the workers for ALL THE ROUNDS, to fix
+    function getWork(uint _taskId) validTask(_taskId) external view returns (bytes32[][] memory) {
         Task storage task = taskList[_taskId];
-        uint16 numOfRounds = task.numberOfRounds;
-        string[][] memory work = new string[][](numOfRounds);
+        uint16 numOfRounds = task.numberOfRounds; // fix this, numberOfRounds is the total
+        bytes32[][] memory work = new bytes32[][](numOfRounds);
         for (uint16 i = 0; i < numOfRounds; i++) {
             work[i] = task.rounds[i].committedWorks;
         }
         return work;
     }
 
+    // should be removed?
     function getWorkers(uint _taskId) validTask(_taskId) external view returns (address[][] memory) {
         Task storage task = taskList[_taskId];
         uint16 numOfRounds = task.numberOfRounds;

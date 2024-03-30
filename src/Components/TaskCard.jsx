@@ -12,7 +12,7 @@ import {
 import RegisterTaskModal from "@/Components/RegisterTaskModal";
 import FundTaskModal from "@/Components/FundTaskModal";
 import GetWeightsBtn from "@/Components/GetWeightsBtn";
-import GetAdminFileBtn from "@/Components/GetAdminFileBtn";
+import DownloadFileButton from "@/Components/DownloadFileButton";
 import CommitWorkModal from "@/Components/CommitWorkModal";
 import StopFundingModal from "@/Components/StopFundingModal";
 import { ScrollArea } from "@/Components/ui/scroll-area"
@@ -21,7 +21,7 @@ import { useEffect, useState } from "react";
 import { useWeb3 } from "@/hooks/useWeb3";
 import {formatState, capitalizeFirstChar} from "@/utils/formatWeb3";
 
-function TaskCard({ forceUpd, id, title, description, state, regWorkers,}) {
+function TaskCard({ forceUpd, task}) {
 
   const navigate = useNavigate();
 
@@ -32,27 +32,20 @@ function TaskCard({ forceUpd, id, title, description, state, regWorkers,}) {
 
   const [forceUpdate, setForceUpdate] = forceUpd;
 
-  const {wallet, getRoles} = useWeb3();
+  /* const {wallet} = useWeb3();
 
   const [data, setData] = useState({
     amFunder: false,
     amWorker: false,
     amAdmin: false,
-  });
+  }); */
 
 
-  useEffect(() => {    
+  
+/*   useEffect(() => {    
     async function getData() {
-      /* let details = await getTask(id);
-      let funders = await getFunderList(id);
-      let funds = await getFunds(id);
-      let regWorkers = await getRegWorkerList(id); */
-      let roles = await getRoles(id);
-      setData(prevData => ({ ...prevData, 
-        /* details: details, 
-        funders: funders, 
-        regWorkers: regWorkers,
-        funds: funds, */
+      let roles = await getRoles(task.id);
+      setData(prevData => ({ ...prevData,
         amFunder: roles.funder,
         amWorker: roles.worker,
         amAdmin: roles.admin,
@@ -60,66 +53,72 @@ function TaskCard({ forceUpd, id, title, description, state, regWorkers,}) {
     }
     //if (contract && wallet.accounts.length > 0) getDetails();
     getData();
-  }, [forceUpdate, wallet]);
+  }, [forceUpdate, wallet]); */
 
   return (
     <article
       className="rounded-lg outline-0 ring-primary transition duration-300
       hover:ring-2 focus:ring-2 cursor-pointer ">
-        <Card onClick={(e) => navigateStopPropagation(e, `/tasks/${id}`)}
+        <Card onClick={(e) => navigateStopPropagation(e, `/tasks/${task.id}`)}
           className="flex flex-col rounded-lg border-2
           sm:h-60 sm:flex-row sm:items-center sm:justify-between overflow-hidden   min-h-[22rem]"> {/* max-h-[25rem] */}
           <div className="flex h-full flex-col overflow-hidden grow">
             <CardHeader className="sm:pr-0">
               <div className="flex gap-2 items-center">
                 <Badge variant="outline" className="text-sm"> 
-                  <span className="text-muted-foreground">#</span>{String(id)}
+                  <span className="text-muted-foreground">#</span>{String(task.id)}
                 </Badge>
-                <CardTitle className="line-clamp-2 sm:line-clamp-1">{title}</CardTitle>
+                <CardTitle className="line-clamp-2 sm:line-clamp-1">{task.title}</CardTitle>
               </div>
             </CardHeader>
             <ScrollArea className="mx-6 mb-6 sm:mr-0 h-32 sm:min-h-24 rounded-md border "
               onClick={(e) => {e.stopPropagation()}}>
               <div className="px-2 py-1">
-                <CardDescription className="text-sm ">{description}</CardDescription>
+                <CardDescription className="text-sm ">{task.description}</CardDescription>
               </div>
             </ScrollArea>
             <CardFooter className="sm:pr-0 pb-0 sm:pb-6">
               <div className="flex flex-wrap gap-2 w-full justify-between">
                   <div className="flex flex-nowrap items-center text-sm text-muted-foreground">
-                    State:&nbsp;<Badge>{capitalizeFirstChar(formatState(state))}</Badge>
+                    State:&nbsp;<Badge>{capitalizeFirstChar(formatState(task.state))}</Badge>
                   </div>
                   <div className="flex flex-nowrap gap-2">
-                    {data.amAdmin ? <Badge variant="secondary"> Admin </Badge> : null}
-                    {data.amFunder ? <Badge variant="secondary"> Funder </Badge> : null}
-                    {data.amWorker ? <Badge variant="secondary"> Worker</Badge> : null}
+                    {task.amAdmin ? <Badge variant="secondary"> Admin </Badge> : null}
+                    {task.amFunder ? <Badge variant="secondary"> Funder </Badge> : null}
+                    {task.amWorker ? <Badge variant="secondary"> Worker</Badge> : null}
                   </div>
               </div>
             </CardFooter>
           </div>
           
           <div className="flex flex-wrap justify-around gap-3 p-6 sm:flex-col sm:justify-center sm:h-full sm:w-40">
-            { formatState(state) == "deployed" ?<>
-              {/* FundtaskModal: disable 👇🏻 also if fundingCompleted == true  or balance == 0*/}
-              <FundTaskModal taskId={id} disabledState={!formatState(state) == "deployed"} forceUpdate={setForceUpdate}/>
-              <RegisterTaskModal taskId={id} disabledState={data.amWorker || !formatState(state) == "deployed"} forceUpdate={setForceUpdate}/>
+            { formatState(task.state) == "deployed" ?<>
+              <FundTaskModal taskId={task.id}
+                disabledState={!formatState(task.state) == "deployed" || task.fundingCompleted}
+                forceUpdate={setForceUpdate}/>
+              <RegisterTaskModal taskId={task.id}
+                disabledState={task.amWorker || !formatState(task.state) == "deployed"} 
+                forceUpdate={setForceUpdate}/>
             </>: null}
-            { formatState(state) == "deployed" && data.amAdmin ?<>
-              {/* StopFundingModal: disable 👇🏻 also if fundingCompleted == true */}
-              <StopFundingModal taskId={id} disabledState={!formatState(state) == "deployed"} forceUpdate={setForceUpdate}/>
+            { formatState(task.state) == "deployed" && task.amAdmin ?
+              <StopFundingModal taskId={task.id}
+                disabledState={!formatState(task.state) == "deployed" || task.fundingCompleted} 
+                forceUpdate={setForceUpdate}/>
+              : null}
+            { true /* formatState(task.state) == "started" */ ?<> {/*  to add: check if this account can download weights (check round) */}
+              <GetWeightsBtn taskId={task.id} // to be implemented
+                disabledState={!formatState(task.state) == "deployed"}
+                forceUpdate={setForceUpdate}/>
             </>: null}
-            { formatState(state) == "deployed" ?<>
-              {/*state: started 👆🏻,  disable 👇🏻: check round + other things */}
-              <GetWeightsBtn taskId={id} disabledState={!formatState(state) == "deployed"} forceUpdate={setForceUpdate}/>
+            { true /*formatState(task.state) == "started"  && task.isWorkerSelected */  ?<>
+            <CommitWorkModal taskId={task.id}
+              disabledState={!formatState(task.state) == "deployed" /* || task.hasCommitted */}
+              forceUpdate={setForceUpdate}/>
             </>: null}
-            { formatState(state) == "deployed" ?<>
-              {/*state:started 👆🏻, disable 👇🏻: check round + other things + disable if worker has already committed the work*/}
-            <CommitWorkModal taskId={id} disabledState={!formatState(state) == "deployed"} forceUpdate={setForceUpdate}/>
-            </>: null}
-            <GetAdminFileBtn taskId={id} forceUpdate={setForceUpdate}/> {/* always available */}
+            <DownloadFileButton ipfsCID={task.file}
+              forceUpdate={setForceUpdate}/> {/* always available */}
             {/* create button for getRanking when task is completed?? create button for claim reward? */}
           </div>
-          
         </Card>
     </article>
   );

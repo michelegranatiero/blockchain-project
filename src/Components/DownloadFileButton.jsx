@@ -3,23 +3,18 @@ import { useWeb3 } from "@/hooks/useWeb3";
 import { Button } from "@/Components/ui/button"
 import { Loader2, Download } from "lucide-react"
 
-function GetAdminFileBtn({ className = "", disabledState = false, taskId, forceUpdate}) {
+function DownloadFileButton({ ipfsCID, disabledState = false, className = ""}) {
 
-  const {getFile} = useWeb3(); //create getFile function in useWeb3 and smart contract
+  const {fetchFromIPFS, downloadFile} = useWeb3();
 
   const [loadingBtn, setloadingBtn] = useState(false);
 
   async function handleClick(e){
     e.stopPropagation();
-    //check state etc...
     setloadingBtn(true);
-    const res = await getFile(taskId);
+    const res = await fetchFromIPFS(ipfsCID);
     if (res) {
-      alert("Transaction successful");
-      //download admin file...
-
-      //window.location.reload();
-      forceUpdate((k) => k + 1);
+      downloadFile(res);
     }else alert("Transaction canceled or denied.");
     setloadingBtn(false);
   }
@@ -34,4 +29,4 @@ function GetAdminFileBtn({ className = "", disabledState = false, taskId, forceU
   )
 }
 
-export default GetAdminFileBtn;
+export default DownloadFileButton;

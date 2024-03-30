@@ -73,10 +73,12 @@ function FundTaskModal({ className = "", disabledState = false, taskId, forceUpd
   }
 
   function handleOpenChanging() {
-    if (open == false && wallet.accounts.length == 0) {        
-      setOpen(false);
+    if (open == false && wallet.accounts.length == 0) {     
       alert("Please, connect your account first.");
-    }else setOpen(!open);
+    }else if (open == false && maxAmount == 0) {
+      alert("You don't have enough funds in your account.");
+    }
+    else setOpen(!open);
   }
 
 

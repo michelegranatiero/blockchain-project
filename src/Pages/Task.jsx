@@ -15,49 +15,34 @@ import  { formatAddress, formatState, capitalizeFirstChar } from '@/utils/format
 import RegisterTaskModal from "@/Components/RegisterTaskModal";
 import FundTaskModal from "@/Components/FundTaskModal";
 import GetWeightsBtn from "@/Components/GetWeightsBtn";
-import GetAdminFileBtn from "@/Components/GetAdminFileBtn";
+import DownloadFileButton from "@/Components/DownloadFileButton";
 import CommitWorkModal from "@/Components/CommitWorkModal";
 import StopFundingModal from "@/Components/StopFundingModal";
 
 function Task() {
-  const { wallet, contract, getTask, getFunderList, getFunds,
-     getRegWorkerList, getRoles} = useWeb3();
+  const { wallet, contract, getTask} = useWeb3();
 
   const { id } = useParams();
 
-  const [task, setTask] = useState({
-    details: {},
-    funders: [],
-    selWorkers: [],
-    funds: null,
-    amFunder: false,
-    amWorker: false,
-    amAdmin: false,
-  });
+  const [task, setTask] = useState(false);
+  
+  const [loading, setLoading] = useState(false);
 
   const [forceUpdate, setForceUpdate] = useState(0);
 
-
   useEffect(() => {
-
-    async function getDetails() {
-      let details = await getTask(id);
-      let funders = await getFunderList(id);
-      let funds = await getFunds(id);
-      let roles = await getRoles(id);
-      
-      setTask(prevDetails => ({ ...prevDetails, 
-        details: details, 
-        funders: funders,
-        funds: funds,
-        amFunder: roles.funder,
-        amWorker: roles.worker,
-        amAdmin: roles.admin,
-      }));
+    async function fetchTask() {
+      setLoading(true);
+      let tsk = await getTask(id, true);
+      if (tsk) setTask(tsk);
+      else setLoading(false);
     }
+    if (contract) fetchTask();
 
-    if (contract) getDetails(); // da sistemare, aggiungere <div>{<Navigate to="/" />}</div>
   }, [contract, wallet, forceUpdate]);
+
+  if (!task)
+    return (<h1 className="text-xl m-auto text-center"> {loading ? "Loading..." : `Task #${id} not found 😞`} </h1>);
 
   return (
     <section className="h-full w-full">
@@ -67,11 +52,11 @@ function Task() {
             <Badge variant="outline" className="text-sm"> 
               <span className="text-muted-foreground">#</span>{String(id)}
             </Badge>
-            <CardTitle>{task.details.title}</CardTitle>
+            <CardTitle>{task.title}</CardTitle>
           </div>
           <div className="flex flex-wrap gap-2 w-full justify-between">
               <div className="flex flex-nowrap items-center text-sm text-muted-foreground">
-                State:&nbsp;<Badge>{capitalizeFirstChar(formatState(Number(task.details.state)))}</Badge></div>
+                State:&nbsp;<Badge>{capitalizeFirstChar(formatState(Number(task.state)))}</Badge></div>
               <div className="flex flex-nowrap gap-2">
                 {task.amAdmin ? <Badge variant="secondary"> Admin </Badge> : null}
                 {task.amFunder ? <Badge variant="secondary"> Funder </Badge> : null}
@@ -80,41 +65,48 @@ function Task() {
           </div>
         </CardHeader>
         <CardContent className="flex flex-col gap-2">
-          <CardDescription>{task.details.description}</CardDescription>
-          <p>Current round: {String(task.details.currentRound)}</p>{/* something to change here on initialization*/}
-          <p>Admin: {formatAddress(String(task.details.admin))}</p>
-          <p>Funding completed: {String(task.details.fundingCompleted)}</p>
-          <p>numberOfRounds: {String(task.details.numberOfRounds)}</p>
-          <p>registeredWorkers: {String(task.details.registeredWorkers)}</p>
-          <p>registeringCompleted: {String(task.details.registeringCompleted)}</p> {/* va rimossa?*/}
-          <p>rounds (struct): {String(task.details.rounds)}</p>
-          <p>workersPerRound: {String(task.details.workersPerRound)}</p>
-          <p>workersRequired: {String(task.details.workersRequired)}</p>
+          <CardDescription>{task.description}</CardDescription>
+          <p>Admin: {formatAddress(String(task.admin))}</p>
+          <p>Funding completed: {String(task.fundingCompleted)}</p>
+          <p>Current round: {String(task.currentRound)}</p>{/* something to change here on initialization*/}
+          <p>numberOfRounds: {String(task.numberOfRounds)}</p>
+          <p>registeredWorkers: {String(task.registeredWorkers)}</p>
+          <p>rounds (struct): {String(task.rounds)}</p>
+          <p>workersPerRound: {String(task.workersPerRound)}</p>
+          <p>total workers required: {String(task.workersPerRound * task.numberOfRounds)}</p>
           <hr />
           <p>Funds: {String(task.funds)} (wei)</p>
           <p>Funders: {String(task.funders)}</p>
-          <p>Reg Workers: {String(task.details.registeredWorkers)}</p>
           <hr />
 
         </CardContent>
         <CardFooter className="flex gap-3 justify-center items-end w-full h-full">
-          { formatState(task.details.state) == "deployed" ?<>
-            <FundTaskModal taskId={id} disabledState={!formatState(task.details.state) == "deployed"} forceUpdate={setForceUpdate}/>
-            <RegisterTaskModal taskId={id} disabledState={task.amWorker || !formatState(task.details.state) == "deployed"} forceUpdate={setForceUpdate}/>
+          { formatState(task.state) == "deployed" ?<>
+            <FundTaskModal taskId={task.id}
+              disabledState={!formatState(task.state) == "deployed" || task.fundingCompleted}
+              forceUpdate={setForceUpdate}/>
+            <RegisterTaskModal taskId={task.id}
+              disabledState={task.amWorker || !formatState(task.state) == "deployed"} 
+              forceUpdate={setForceUpdate}/>
           </>: null}
-          { formatState(task.details.state) == "deployed" && task.amAdmin ?<>
-            <StopFundingModal taskId={id} disabledState={!formatState(task.details.state) == "deployed"} forceUpdate={setForceUpdate}/>
-            {/* check other conditions (disabled if is funding is already stopped) */}
+          { formatState(task.state) == "deployed" && task.amAdmin ?
+            <StopFundingModal taskId={task.id}
+              disabledState={!formatState(task.state) == "deployed" || task.fundingCompleted} 
+              forceUpdate={setForceUpdate}/>
+            : null}
+          { true /* formatState(task.state) == "started" */ ?<> {/*  to add: check if this account can download weights (check round) */}
+            <GetWeightsBtn taskId={task.id} // to be implemented
+              disabledState={!formatState(task.state) == "deployed"}
+              forceUpdate={setForceUpdate}/>
           </>: null}
-          { formatState(task.details.state) == "deployed" ?<> {/*state:started check round + other things */}
-            <GetWeightsBtn taskId={id} disabledState={!formatState(task.details.state) == "deployed"} forceUpdate={setForceUpdate}/>
+          { true /*formatState(task.state) == "started"  && task.isWorkerSelected */  ?<>
+          <CommitWorkModal taskId={task.id}
+            disabledState={!formatState(task.state) == "deployed" /* || task.hasCommitted */}
+            forceUpdate={setForceUpdate}/>
           </>: null}
-          { formatState(task.details.state) == "deployed" ?<> {/*state:started check round + other things*/}
-            <CommitWorkModal taskId={id} disabledState={!formatState(task.details.state) == "deployed"} forceUpdate={setForceUpdate}/>
-            {/* disable state if worker has already committed the work */}
-          </>: null}
-
-          <GetAdminFileBtn taskId={id} forceUpdate={setForceUpdate}/>
+          <DownloadFileButton ipfsCID={task.file}
+            forceUpdate={setForceUpdate}/> {/* always available */}
+          {/* create button for getRanking when task is completed?? create button for claim reward? */}
         </CardFooter>
 
       </Card>

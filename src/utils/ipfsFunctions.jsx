@@ -1,21 +1,5 @@
-export const fileToBase64 = async (file) => {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.readAsDataURL(file); // convert file to base64 string (with prefix "data: MIME type") 
-    
-    // When the file is loaded, resolve the promise
-    /* reader.onload is an event handler triggered when the reading operation
-      initiated by reader.readAsDataURL() is complete */
-    reader.onload = function() {
-      resolve(reader.result);
-    };
-
-    reader.onerror = function(error) {
-      reject(error);
-    };
-  });
-};
-
+import { Buffer } from 'buffer';
+import { Web3 } from 'web3';
 
 // Upload file to IPFS as JSON
 export const sendToIPFS = async (fileObj, name) => {
@@ -68,28 +52,80 @@ export const fetchFromIPFS = async (cid) => {
 };
 
 
-export const downloadFile = async (obj, name, type) => {
-  const file =  await fetch(obj).then(response => response.blob()).then(blob => {
-    return new File([blob], name, {type: type});
-  });
+export const downloadFile = async (obj) => {
+  try {
 
-  const url = window.URL.createObjectURL(
-    file,
-  );
+    const file =  await fetch(obj.content).then(response => response.blob()).then(blob => {
+      return new File([blob], obj.name, {type: obj.type});
+    });
   
-  const link = document.createElement('a');
-  link.href = url;
-  link.setAttribute(
-    'download',
-    file.name,
-  );
-
-  // Append to html link element page
-  document.body.appendChild(link);
-
-  // Start download
-  link.click();
-
-  // Clean up and remove the link
-  link.parentNode.removeChild(link);
+    const url = window.URL.createObjectURL(
+      file
+    );
+    
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute(
+      'download',
+      file.name,
+    );
+  
+    // Append to html link element page
+    document.body.appendChild(link);
+  
+    // Start download
+    link.click();
+  
+    // Clean up and remove the link
+    link.parentNode.removeChild(link);
+  } catch (error) {
+    console.error('Error fetching data from IPFS:', error);
+  }
 }
+
+export const encodeCIDto2Bytes32 = (ipfsCID) => {
+  //encode to ascii
+  const ascii = []
+  for (let i = 0; i < ipfsCID.length; i++) {
+    ascii.push(ipfsCID.charCodeAt(i));
+  }
+  //console.log("ascii encode" ,[...ascii]); //ascii
+
+  //from ascii to base64
+  const base64str = Buffer.from(ascii).toString('base64');
+  //console.log("base64 string", base64str.length, base64str);
+
+  // split in 2 parts and convert to hex
+  const part1 = Web3.utils.asciiToHex(base64str.slice(0, 32));
+  const part2 = Web3.utils.asciiToHex(base64str.slice(32, 64));
+  //console.log(part1, part2);
+  return [part1, part2];
+}
+
+export const decode2Bytes32toCID = (part1, part2) => {
+  //convert to base64
+  const base64str = Web3.utils.hexToAscii(part1) + Web3.utils.hexToAscii(part2);
+  //convert to ascii (CID)
+  const ipfsCID = Buffer.from(base64str, 'base64').toString('ascii');
+  return ipfsCID;
+}
+
+// Convert file to base64 string
+export const fileToBase64 = async (file) => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file); // convert file to base64 string (with prefix "data: MIME type") 
+    
+    // When the file is loaded, resolve the promise
+    /* reader.onload is an event handler triggered when the reading operation
+      initiated by reader.readAsDataURL() is complete */
+    reader.onload = function() {
+      resolve(reader.result);
+    };
+
+    reader.onerror = function(error) {
+      reject(error);
+    };
+  });
+};
+

@@ -16,6 +16,7 @@ import {
   FormMessage,
 } from "@/Components/ui/form"
 import { Input } from "@/Components/ui/input"
+import { Textarea } from '@/Components/ui/textarea';
 import { Loader2 } from "lucide-react"
 import { useState } from 'react';
 
@@ -24,7 +25,7 @@ import { useState } from 'react';
 const taskSchema = z.object({
   title: z.coerce.string().min(2, {
     message: "Username must be at least 2 characters.",
-  }).max(32),
+  }).max(100),
   descr: z.coerce.string().min(2).max(1000),
   numRounds: z.coerce.number().min(2).max(1000),
   workersPerRound: z.coerce.number().min(2).max(10000),
@@ -81,7 +82,7 @@ function NewTaskForm({setOpenState, forceUpdate}) {
     {
       name: "descr",
       label: "Description",
-      type: "text",
+      type: "textarea",
       placeholder: "description",
     },
     {
@@ -102,6 +103,7 @@ function NewTaskForm({setOpenState, forceUpdate}) {
 
     <Form {...form} >
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+        <div className='space-y-6'>
         {formFields.map((item) => (
           <FormField
             key={item.name}
@@ -111,7 +113,10 @@ function NewTaskForm({setOpenState, forceUpdate}) {
               <FormItem>
                 <FormLabel htmlFor={item.name}>{item.label}</FormLabel>
                 <FormControl>
-                  <Input type={item.type} placeholder={item.placeholder} {...field}/>
+                  {item.type === "textarea" ?
+                    <Textarea placeholder={item.placeholder} {...field} className="resize-none"/> :
+                    <Input type={item.type} placeholder={item.placeholder} {...field}/>
+                  }
                 </FormControl>
                 {/* <FormDescription>
                   Description
@@ -134,7 +139,7 @@ function NewTaskForm({setOpenState, forceUpdate}) {
                 </FormItem>
               )}
             />
-        {/* <div className='text-end'> */}
+        </div>
         <DialogFooter >
           <DialogClose asChild>
             <Button type="button" variant="outline">

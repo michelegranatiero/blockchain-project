@@ -19,26 +19,25 @@ import  { formatState } from '@/utils/formatWeb3'
 
 function Home() {
 
-  const [tasks, setTasks] = useState([]);
-  const [forceUpdate, setForceUpdate] = useState(0);
-
-  const {wallet, contract, getAllTasksInfo, globFilters } = useWeb3();
+  const {wallet, contract, getAllTasks, globFilters } = useWeb3();
 
   const [filters, setFilters] = globFilters;
 
-  const [filteredTasks, setFilteredTasks] = useState([]); // PROVAAAAAAAAAAAAAAAAAAAAA
+  const [tasks, setTasks] = useState([]);
+  const [filteredTasks, setFilteredTasks] = useState([]);
 
-  // fetch all tasks and rerender on changes
+  const [loading, setLoading] = useState(false);
+  
+  const [forceUpdate, setForceUpdate] = useState(0);
+
+  // fetch all tasks and re-render on changes
+  // every time a task changes this entire page should be re-rendered because of the filters
   useEffect(() => {
-    
     async function fetchData() {
-      try {
-        let tasks = await getAllTasksInfo();
-        setTasks(tasks.reverse());
-        
-      } catch (error) {
-        console.error("Error retriving tasks:", error);
-      }
+      setLoading(true);
+      let tasks = await getAllTasks();
+      if (tasks.length > 0) setTasks(tasks.reverse());
+      else setLoading(false);
     }
     if (contract) fetchData();
     
@@ -51,9 +50,9 @@ function Home() {
     }));
   }, [filters, tasks]);
 
-  function filterFunction(task) {        
-    const state = formatState(Number(task.state));
-    return (filters.includes(state.toLowerCase()) ||
+  function filterFunction(task) {
+    return (
+      filters.includes(formatState(Number(task.state)).toLowerCase()) ||
       (filters.includes("admin") && task.amAdmin) ||
       (filters.includes("funder") && task.amFunder) ||
       (filters.includes("worker") && task.amWorker)
@@ -70,15 +69,13 @@ function Home() {
             filteredTasks.map((task) => (
               <TaskCard
                 key={task.id}
-                id={task.id}
-                title={task.title}
-                description={task.description}
-                state={task.state}
-                regWorkers={task.registeredWorkers}
+                task = {task}
                 forceUpd={[forceUpdate, setForceUpdate]}
               />
             ))
-          : <h1 className="text-xl m-auto">No tasks found :&#40;</h1> }
+          : <h1 className="text-xl m-auto"> 
+              {loading ? "Loading..." : "No tasks found 😞"}
+            </h1>}
         </section>
       </div>
       

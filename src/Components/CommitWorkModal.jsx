@@ -29,11 +29,11 @@ import {
 } from "@/Components/ui/form"
 
 const commitSchema = z.object({
-  file: z.any().refine((file) => {
-    if (!file) return false;
+  votes: z.coerce.number().min(2).max(1000), // how should they be????
+  file: z.instanceof(FileList).refine((file) => {
+    if (file.length == 0 || !file) return false;
     return true;
   }),
-  votes: z.coerce.number().min(2).max(1000), // how should they be????
 })
 
 // CHECK IF WORKER HAS ALREADY COMMITED WORK! EVEN IN SMART CONTRACT
@@ -45,8 +45,8 @@ function CommitWorkModal({ className = "", disabledState = false, taskId, forceU
   const form = useForm({
     resolver: zodResolver(commitSchema),
     defaultValues: {
-      file: "",
       votes: "", // how should they be?
+      file: "",
     },
   });
 
@@ -58,9 +58,7 @@ function CommitWorkModal({ className = "", disabledState = false, taskId, forceU
     // ✅ This will be type-safe and validated.
     setloadingBtn(true);
 
-    const ipfsFile = values.file;
-    //send to ipfs...
-    //const res = await commitWork( taskId, ipfsHash, values.votes);
+    const res = await commitWork( taskId, values.file[0], values.votes);
     if (res) {
       setOpen(false);
       alert("Transaction successful");

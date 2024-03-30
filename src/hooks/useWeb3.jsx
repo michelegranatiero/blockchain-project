@@ -1,11 +1,10 @@
 import { createContext, useContext, useEffect, useState } from 'react';
 import { useMetaMask } from './useMetaMask';
 
-import { Buffer } from 'buffer';
 import { Web3 } from 'web3';
 
 import { contractAddress, contractAbi} from '@/utils/constants';
-import { sendToIPFS, fetchFromIPFS, fileToBase64 } from '@/utils/ipfsFunctions';
+import { sendToIPFS,fetchFromIPFS, fileToBase64, downloadFile, encodeCIDto2Bytes32, decode2Bytes32toCID } from '@/utils/ipfsFunctions';
 const Web3Context = createContext({})
 
 export const Web3ContextProvider = ({children}) => {
@@ -29,39 +28,23 @@ export const Web3ContextProvider = ({children}) => {
       return false;
     }
     try {
-
       const fileB64 = await fileToBase64(file);
-      const fileObj = { name: file.name, content: fileB64, type: file.type }; //JSON.stringify ??
+      const fileObj = { name: file.name, content: fileB64, type: file.type };
       const ipfsFileHash = await sendToIPFS(fileObj, file.name);
       if (!ipfsFileHash) {
         alert("Error uploading file to IPFS.");
         return;
       }      
 
-      const mainObj = {title: title, description: descr, file: ipfsFileHash};
-      const ipfsMainHash = await sendToIPFS(mainObj, title);
-      if (!ipfsMainHash) {
+      const mainObj = {title: title, description: descr, file: ipfsFileHash}; // file format
+      const ipfsCID = await sendToIPFS(mainObj, title);
+      if (!ipfsCID) {
         alert("Error uploading to IPFS.");
         return;
       }
 
-      //encode to ascii
-      const ascii = []
-      for (let i = 0; i < ipfsMainHash.length; i++) {
-        ascii.push(ipfsMainHash.charCodeAt(i));
-      }
-      //console.log("ascii encode" ,[...ascii]); //ascii
-      
-
-      //from ascii to base64
-      const base64str = Buffer.from(ascii).toString('base64');
-      console.log("base64 string", base64str.length, base64str);
-
-      // split in 2 parts and convert to hex
-      const part1 = Web3.utils.asciiToHex(base64str.slice(0, 32));
-      const part2 = Web3.utils.asciiToHex(base64str.slice(32, 64));
-      console.log(part1, part2);
-
+      // encode CID to 2 bytes32
+      const [part1, part2] = encodeCIDto2Bytes32(ipfsCID);
 
       // deploy task
       const receipt = await contract.methods  // remove await if you want to use events below
@@ -83,67 +66,68 @@ export const Web3ContextProvider = ({children}) => {
   }
 
 
-  const getAllTasks = async () => {
-    if (!contract) {
-      console.error("Contract instance is not available.");
-      return;
-    }
-    try {
-      const tasks = await contract.methods.getAllTasks().call();
-      //console.log(tasks);
-      return tasks;
-    } catch (error) {
-      console.error("Error retriving tasks:", error);
-    }
-    
-  }
 
-
-  const getAllTasksInfo = async () => {
-    const tasks = await contract.methods.getAllTasks().call();
-    if (wallet.accounts.length > 0) {
-      for (let i = 0; i < tasks.length; i++) {
-        let roles = await getRoles(tasks[i].id);
-        tasks[i].amFunder = roles.funder;
-        tasks[i].amWorker = roles.worker;
-        tasks[i].amAdmin = roles.admin;
-
-
-        //decode bytes32 to ipfs hash
-        let part1 = Web3.utils.hexToAscii(tasks[i].hashPart1);
-        let part2 = Web3.utils.hexToAscii(tasks[i].hashPart2);
-        let hash = part1 + part2;
-        const ipfsHash = Buffer.from(hash, 'base64').toString('ascii');
-
-
-        //fetch from ipfs
-        const ipfsObj = await fetchFromIPFS(ipfsHash);
-        console.log(ipfsObj);
-        
-        
-        tasks[i].title = ipfsObj.title;
-        tasks[i].description = ipfsObj.description;
-        tasks[i].file = ipfsObj.file;
-        
-      }
-    }
-    
-    return tasks;
-  }
-
-
-  const getTask = async (taskId) => {
+  const getTask = async (taskId, details = false) => {
     if (!contract) {
       console.error("Contract instance is not available.");
       return;
     }
     try {
       const task = await contract.methods.getTask(taskId).call();
+
+      if (wallet.accounts.length > 0) {
+        let roles = await getRoles(task.id);
+        task.amFunder = roles.funder;
+        task.amWorker = roles.worker;
+        task.amAdmin = roles.admin;
+        // check if task started
+        task.hasCommitted = task.rounds.length > 0 ? await hasCommitted(task.id, wallet.accounts[0]) : true;
+        task.isWorkerSelected = task.rounds.length > 0 ? await isWorkerSelected(task.id, wallet.accounts[0]) : false;
+      }
+
+      // task advanced details (to be used on SINGLE TASK page)
+      if (details){
+        task.funds = await getFunds(task.id);
+        task.funders = await getFunderList(task.id);
+      }
+
+      //decode CID to ipfs CID
+      const ipfsCID = decode2Bytes32toCID(task.hashPart1, task.hashPart2)
+
+      //fetch from ipfs
+      const ipfsObj = await fetchFromIPFS(ipfsCID);
+      
+      task.title = ipfsObj.title;
+      task.description = ipfsObj.description;
+      task.file = ipfsObj.file;
+
       //console.log(task);
       return task
     } catch (error) {
       console.error("Error retriving task:", error);
     }
+  }
+
+
+  const getAllTasks = async () => {
+    if (!contract) {
+      console.error("Contract instance is not available.");
+      return;
+    }
+    try {
+      //const tasksAll = await contract.methods.getAllTasks().call();
+      const taskCounter = await contract.methods.taskCounter().call();
+      const tasks = [];
+      for (let i = 0; i <  taskCounter/* tasksAll.length */; i++) {
+        const task = await getTask(i);
+        tasks.push(task);
+      }
+      //console.log(tasks);
+      return tasks;
+    } catch (error) {
+      console.error("Error retriving tasks:", error);
+    }
+    
   }
 
 
@@ -237,14 +221,54 @@ export const Web3ContextProvider = ({children}) => {
   }
 
 
-  // DA CONTROLLARE (SU SMART CONTRACT)
-  const commitWork = async (taskId, work, votes) => {
+  const isWorkerSelected = async (taskId, address) => {
     if (!contract) {
       console.error("Contract instance is not available.");
       return;
     }
     try {
-      const res = await contract.methods.getWork(taskId, work, votes).send({ from: wallet.accounts[0] });
+      const res = await contract.methods.isWorkerSelected(taskId, address).call();
+      return res
+    } catch (error) {
+      console.error("Error in 'isWorkerSelected' method:", error);
+    }
+  }
+
+
+  const hasCommitted = async (taskId, address) => {
+    if (!contract) {
+      console.error("Contract instance is not available.");
+      return;
+    }
+    try {
+      const res = await contract.methods.hasCommitted(taskId, address).call();
+      return res
+    } catch (error) {
+      console.error("Error in 'hasCommitted' method:", error);
+    }
+  }
+
+
+  // DA CONTROLLARE (SU SMART CONTRACT)
+  const commitWork = async (taskId, workFile, votes) => { /* VOTES SHOULD BE AN ARRAY, still to be defined */
+    if (!contract) {
+      console.error("Contract instance is not available.");
+      return;
+    }
+    try {
+      // upload file to IPFS
+      const fileB64 = await fileToBase64(workFile);
+      const fileObj = { name: workFile.name, content: fileB64, type: workFile.type };
+      const ipfsCID = await sendToIPFS(fileObj, file.name);
+      if (!ipfsCID) {
+        alert("Error uploading file to IPFS.");
+        return;
+      }
+
+      // encode CID to 2 bytes32
+      const [workPart1, workPart2] = encodeCIDto2Bytes32(ipfsCID);
+
+      const res = await contract.methods.commitWork(taskId, workPart1, workPart2, votes).send({ from: wallet.accounts[0] });
       return res
     } catch (error) {
       console.error("Error committing work:", error);
@@ -259,7 +283,7 @@ export const Web3ContextProvider = ({children}) => {
       return;
     }
     try {
-      const res = await contract.methods.getWork(taskId).call();
+      const res = await contract.methods.getRanking(taskId).call();
       return res
     } catch (error) {
       console.error("Error retriving ranking:", error);
@@ -281,21 +305,6 @@ export const Web3ContextProvider = ({children}) => {
   }
 
 
-  // DA CONTROLLARE (SU SMART CONTRACT)
-  const getWorkers = async (taskId) => {
-    if (!contract) {
-      console.error("Contract instance is not available.");
-      return;
-    }
-    try {
-      const res = await contract.methods.getWork(taskId).call();
-      return res
-    } catch (error) {
-      console.error("Error retriving workers:", error);
-    }
-  }
-
-
   const [filters, setFilters] = useState(["deployed"]); // global tasks filters
 
   return (
@@ -305,22 +314,23 @@ export const Web3ContextProvider = ({children}) => {
         web3,
         contract,
         globFilters: [filters, setFilters],
-        /* sendToIPFS,
-        fetchFromIPFS, */
         createTask,
-        getAllTasks,
-        getAllTasksInfo,
         getTask,
+        getAllTasks,
         getFunderList,
         getFunds,
         getRoles,
         fund,
         stopFunding,
         register,
+        isWorkerSelected,
+        hasCommitted,
         commitWork,
         getRanking,
         getWork,
-        getWorkers,
+        // ipfsFunctions
+        fetchFromIPFS,
+        downloadFile,
       }}
     >
       {children}
