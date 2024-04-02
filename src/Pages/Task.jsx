@@ -26,16 +26,15 @@ function Task() {
 
   const [task, setTask] = useState(false);
   
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   const [forceUpdate, setForceUpdate] = useState(0);
 
   useEffect(() => {
     async function fetchTask() {
-      setLoading(true);
       let tsk = await getTask(id, true);
       if (tsk) setTask(tsk);
-      else setLoading(false);
+      setLoading(false);
     }
     if (contract) fetchTask();
 

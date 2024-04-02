@@ -26,7 +26,7 @@ function Home() {
   const [tasks, setTasks] = useState([]);
   const [filteredTasks, setFilteredTasks] = useState([]);
 
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   
   const [forceUpdate, setForceUpdate] = useState(0);
 
@@ -34,10 +34,9 @@ function Home() {
   // every time a task changes this entire page should be re-rendered because of the filters
   useEffect(() => {
     async function fetchData() {
-      setLoading(true);
       let tasks = await getAllTasks();
       if (tasks.length > 0) setTasks(tasks.reverse());
-      else setLoading(false);
+      setLoading(false);
     }
     if (contract) fetchData();
     
