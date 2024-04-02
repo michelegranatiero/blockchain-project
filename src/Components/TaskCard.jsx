@@ -71,7 +71,7 @@ function TaskCard({ forceUpd, task}) {
                 <CardTitle className="line-clamp-2 sm:line-clamp-1">{task.title}</CardTitle>
               </div>
             </CardHeader>
-            <ScrollArea className="mx-6 mb-6 sm:mr-0 h-32 sm:min-h-24 rounded-md border "
+            <ScrollArea className="mx-6 mb-6 sm:mr-0 h-32 sm:min-h-24 rounded-md border cursor-default"
               onClick={(e) => {e.stopPropagation()}}>
               <div className="px-2 py-1">
                 <CardDescription className="text-sm ">{task.description}</CardDescription>
