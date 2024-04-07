@@ -291,6 +291,7 @@ contract FedMLContract {
 
         task.rounds[currentRound].workers.push();
         task.rounds[currentRound].committedWorks.push();
+        task.rounds[currentRound].committedWorks.push();
         task.rounds[currentRound].ranking.push();
         task.rounds[currentRound].workers[commitCount] = msg.sender;
         task.rounds[currentRound].committedWorks[commitCount*2] = workPart1;
@@ -315,7 +316,7 @@ contract FedMLContract {
             //endRound(_taskId);
             // END ROUND
             // if the current round is the last one then terminate the task
-            if (currentRound == task.numberOfRounds) {
+            if (currentRound+1 == task.numberOfRounds) {
                 //endTask(_taskId); 
                 // END TASK
                 //assign rewards

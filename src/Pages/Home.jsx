@@ -19,7 +19,7 @@ import  { formatState } from '@/utils/formatWeb3'
 
 function Home() {
 
-  const {wallet, contract, getAllTasks, globFilters } = useWeb3();
+  const {wallet, contract, getAllTasks, globFilters, setHomeEvents } = useWeb3();
 
   const [filters, setFilters] = globFilters;
 
@@ -33,12 +33,23 @@ function Home() {
   // fetch all tasks and re-render on changes
   // every time a task changes this entire page should be re-rendered because of the filters
   useEffect(() => {
-    async function fetchData() {
-      let tasks = await getAllTasks();
-      if (tasks.length > 0) setTasks(tasks.reverse());
+    async function fetchData() {      
+      let tasks = await getAllTasks();      
+      if (tasks && tasks.length > 0) setTasks(tasks.reverse());
       setLoading(false);
     }
     if (contract) fetchData();
+    else {
+      const timeout = setTimeout(() => {
+        if (!contract && loading) setLoading(false);
+      }, 2000);
+      return () => clearTimeout(timeout);
+    }
+
+    //events
+    const cleanUpFunct = setHomeEvents(setForceUpdate);
+    if (cleanUpFunct) return () => cleanUpFunct();
+    
     
   }, [contract, wallet, forceUpdate]);
 
@@ -48,6 +59,10 @@ function Home() {
       return filterFunction(task);
     }));
   }, [filters, tasks]);
+
+
+
+
 
   function filterFunction(task) {
     return (

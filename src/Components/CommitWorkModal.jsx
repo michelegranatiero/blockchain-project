@@ -46,13 +46,14 @@ function CommitWorkModal({ className = "", disabledState = false, taskId, forceU
     resolver: zodResolver(commitSchema),
     defaultValues: {
       votes: "", // how should they be?
-      file: "",
     },
   });
 
   const [open, setOpen] = useState(false);
   const [loadingBtn, setloadingBtn] = useState(false);
 
+  const fileRef = form.register("file"); // fundamental for input file
+  
   async function onSubmit(values){
     // Do something with the form values.
     // ✅ This will be type-safe and validated.
@@ -107,25 +108,32 @@ function CommitWorkModal({ className = "", disabledState = false, taskId, forceU
         </DialogHeader>
         <Form {...form} >
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-          {formFields.map((item) => (
             <FormField
-              key={item.name}
               control={form.control}
-              name={item.name}
+              name="votes"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel htmlFor={item.name}>{item.label}</FormLabel>
+                  <FormLabel htmlFor="votes">Votes</FormLabel>
                   <FormControl>
-                    <Input type={item.type} placeholder={item.placeholder} {...field}/>
+                    <Input type="number" placeholder="votes" {...field}/>
                   </FormControl>
-                  {/* <FormDescription>
-                    Description
-                  </FormDescription> */}
                   <FormMessage />
                 </FormItem>
               )}
             />
-          ))}
+            <FormField
+              control={form.control}
+              name="file"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel htmlFor="file">File</FormLabel>
+                  <FormControl>
+                    <Input type="file" {...fileRef}/>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
           {/* <div className='text-end'> */}
           <DialogFooter >
             <DialogClose asChild>

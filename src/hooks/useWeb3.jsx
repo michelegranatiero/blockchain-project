@@ -4,6 +4,7 @@ import { useMetaMask } from './useMetaMask';
 import { Web3 } from 'web3';
 
 import { contractAddress, contractAbi} from '@/utils/constants';
+import  { formatState } from '@/utils/formatWeb3'
 import { sendToIPFS,fetchFromIPFS, fileToBase64, downloadFile, encodeCIDto2Bytes32, decode2Bytes32toCID } from '@/utils/ipfsFunctions';
 const Web3Context = createContext({})
 
@@ -20,6 +21,100 @@ export const Web3ContextProvider = ({children}) => {
       setContract(contractInstance);
     }
   }, [web3]);
+  
+
+  // EVENTS
+  const setHomeEvents = (setUpdate) => {
+    if (!contract) return;
+  
+    //console.log(contract.events);
+    contract.events.Deployed().on('data', (eventData) => {
+      console.log("Event data:", eventData);
+      setUpdate((k) => k + 1);
+    });
+
+    /* contract.events.NewFunding().on('data', (eventData) => {
+      console.log("Event data:", eventData);
+      setUpdate((k) => k + 1);
+    }); */
+
+    contract.events.NeedRandomness().on('data', (eventData) => {
+      console.log("Event data:", eventData);
+      setUpdate((k) => k + 1);
+    });
+    
+    contract.events.RoundStarted().on('data', (eventData) => {
+      console.log("Event data:", eventData);
+      setUpdate((k) => k + 1);
+    });
+
+    contract.events.TaskEnded().on('data', (eventData) => {
+      console.log("Event data:", eventData);
+      setUpdate((k) => k + 1);
+    });
+
+    return () => contract.events.allEvents().removeAllListeners();
+
+    /* const event1 = contract.events.Deployed({
+      filter: {
+        filter: { val: 100 },
+      },
+      fromBlock: 0, // 'latest' is the default
+    });
+    
+    event1.on('data', (eventData) => {
+      console.log("Event data:", eventData);
+    });
+    event1.on('error', () => {
+      console.error("Event error:", error);
+    }); */
+    
+  };
+
+
+  const setTaskEvents = (taskId, setUpdate) => {
+    if (!contract) return;
+
+    contract.events.NewFunding({ filter: { taskId: taskId } }).on('data', (eventData) => {
+      console.log("Event data:", eventData);
+      console.log("Values:", eventData.returnValues);
+      
+      setUpdate((k) => k + 1);
+    });
+
+
+
+    // TO BE REMOVED, just for debugging
+    contract.events.NeedRandomness({ filter: { taskId: taskId } }).on('data', (eventData) => {
+      console.log("Event data:", eventData);
+      const data = eventData.returnValues;
+      try {
+        const randomness = contract.methods.setRandomness(data.taskId, 1234).send({ from: wallet.accounts[0] }); //seed 1234
+        console.log("Randomness set:", randomness);
+      } catch (error) {
+        console.log("error setting randomness:", error);
+      }
+      
+
+
+      setUpdate((k) => k + 1);
+    });
+
+    contract.events.RoundStarted({ filter: { taskId: taskId } }).on('data', (eventData) => {
+      console.log("Event data:", eventData);
+      setUpdate((k) => k + 1);
+    });
+
+    contract.events.TaskEnded({ filter: { taskId: taskId } }).on('data', (eventData) => {
+      console.log("Event data:", eventData);
+      setUpdate((k) => k + 1);
+    });
+
+    return () => contract.events.allEvents().removeAllListeners();
+  
+  }
+
+  
 
 
   const createTask = async (title, descr, numRounds, workersPerRound, file) => {
@@ -81,8 +176,10 @@ export const Web3ContextProvider = ({children}) => {
         task.amWorker = roles.worker;
         task.amAdmin = roles.admin;
         // check if task started
-        task.hasCommitted = task.rounds.length > 0 ? await hasCommitted(task.id, wallet.accounts[0]) : true;
-        task.isWorkerSelected = task.rounds.length > 0 ? await isWorkerSelected(task.id, wallet.accounts[0]) : false;
+        if (formatState(task.state) == "started") {
+          task.hasCommitted = task.rounds.length > 0 ? await hasCommitted(task.id, wallet.accounts[0]) : true;
+          task.isWorkerSelected = task.rounds.length > 0 ? await isWorkerSelected(task.id, wallet.accounts[0]) : false;
+        }
       }
 
       // task advanced details (to be used on SINGLE TASK page)
@@ -112,7 +209,7 @@ export const Web3ContextProvider = ({children}) => {
   const getAllTasks = async () => {
     if (!contract) {
       console.error("Contract instance is not available.");
-      return;
+      return false;
     }
     try {
       //const tasksAll = await contract.methods.getAllTasks().call();
@@ -231,6 +328,7 @@ export const Web3ContextProvider = ({children}) => {
       return res
     } catch (error) {
       console.error("Error in 'isWorkerSelected' method:", error);
+      return false; //default
     }
   }
 
@@ -251,6 +349,7 @@ export const Web3ContextProvider = ({children}) => {
 
   // DA CONTROLLARE (SU SMART CONTRACT)
   const commitWork = async (taskId, workFile, votes) => { /* VOTES SHOULD BE AN ARRAY, still to be defined */
+    votes = [1,2]// TO BE CHANGED, just for debugging
     if (!contract) {
       console.error("Contract instance is not available.");
       return;
@@ -259,7 +358,7 @@ export const Web3ContextProvider = ({children}) => {
       // upload file to IPFS
       const fileB64 = await fileToBase64(workFile);
       const fileObj = { name: workFile.name, content: fileB64, type: workFile.type };
-      const ipfsCID = await sendToIPFS(fileObj, file.name);
+      const ipfsCID = await sendToIPFS(fileObj, workFile.name);
       if (!ipfsCID) {
         alert("Error uploading file to IPFS.");
         return;
@@ -305,7 +404,7 @@ export const Web3ContextProvider = ({children}) => {
   }
 
 
-  const [filters, setFilters] = useState(["deployed"]); // global tasks filters
+  const [filters, setFilters] = useState(["deployed", "started", "completed"]); // global tasks filters
 
   return (
     <Web3Context.Provider
@@ -331,6 +430,9 @@ export const Web3ContextProvider = ({children}) => {
         // ipfsFunctions
         fetchFromIPFS,
         downloadFile,
+        // events
+        setHomeEvents,
+        setTaskEvents,
       }}
     >
       {children}

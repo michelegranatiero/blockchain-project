@@ -20,7 +20,7 @@ import CommitWorkModal from "@/Components/CommitWorkModal";
 import StopFundingModal from "@/Components/StopFundingModal";
 
 function Task() {
-  const { wallet, contract, getTask} = useWeb3();
+  const { wallet, contract, getTask, setTaskEvents} = useWeb3();
 
   const { id } = useParams();
 
@@ -37,6 +37,16 @@ function Task() {
       setLoading(false);
     }
     if (contract) fetchTask();
+    else {
+      const timeout = setTimeout(() => {
+        if (!contract && loading) setLoading(false);
+      }, 2000);
+      return () => clearTimeout(timeout);
+    }
+
+    //events
+    const cleanUpFunct = setTaskEvents(id, setForceUpdate);
+    if (cleanUpFunct) return () => cleanUpFunct();
 
   }, [contract, wallet, forceUpdate]);
 
@@ -71,6 +81,7 @@ function Task() {
           <p>numberOfRounds: {String(task.numberOfRounds)}</p>
           <p>registeredWorkers: {String(task.registeredWorkers)}</p>
           <p>rounds (struct): {String(task.rounds)}</p>
+          <p>Are you selected for current round?: {String(task.isWorkerSelected)}</p>
           <p>workersPerRound: {String(task.workersPerRound)}</p>
           <p>total workers required: {String(task.workersPerRound * task.numberOfRounds)}</p>
           <hr />
@@ -100,7 +111,7 @@ function Task() {
           </>: null}
           { true /*formatState(task.state) == "started"  && task.isWorkerSelected */  ?<>
           <CommitWorkModal taskId={task.id}
-            disabledState={!formatState(task.state) == "deployed" /* || task.hasCommitted */}
+            disabledState={!formatState(task.state) == "deployed" || task.hasCommitted}
             forceUpdate={setForceUpdate}/>
           </>: null}
           <DownloadFileButton ipfsCID={task.file}
