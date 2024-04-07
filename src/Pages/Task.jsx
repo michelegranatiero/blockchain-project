@@ -75,12 +75,16 @@ function Task() {
           </div>
         </CardHeader>
         <CardContent className="flex flex-col gap-2">
+          <hr />
           <CardDescription>{task.description}</CardDescription>
+          <hr />
           <p>Funds (wei): {Number(task.funds)}</p>
           <p># Funders: {String(task.funders.length)}</p>
           <p>Admin Address: {formatAddress(String(task.admin))}</p>
-          <p>Workers per round: {String(task.workersPerRound)}</p>
-          <p>Workers: {String(task.registeredWorkers.length)}/{String(task.workersPerRound*task.numberOfRounds)}</p>
+          <p>
+            Workers: {String(task.registeredWorkers.length)}/{String(task.workersPerRound*task.numberOfRounds)}
+            <span> ({String(task.workersPerRound)} per round) </span>
+          </p>
           {formatState(task.state) == "deployed"?<>
             <p>Funding completed: {task.fundingCompleted ? "Yes": "No"}</p>
             <p># Rounds: {String(task.numberOfRounds)}</p>

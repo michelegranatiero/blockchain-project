@@ -61,7 +61,7 @@ function TaskCard({ forceUpd, task}) {
       hover:ring-2 focus:ring-2 cursor-pointer ">
         <Card onClick={(e) => navigateStopPropagation(e, `/tasks/${task.id}`)}
           className="flex flex-col rounded-lg border-2
-          sm:h-60 sm:flex-row sm:items-center sm:justify-between overflow-hidden   min-h-[22rem]"> {/* max-h-[25rem] */}
+          sm:h-64 sm:flex-row sm:items-center sm:justify-between overflow-hidden max-h-[25rem]">
           <div className="flex h-full flex-col overflow-hidden grow">
             <CardHeader className="sm:pr-0">
               <div className="flex gap-2 items-center">
@@ -91,7 +91,7 @@ function TaskCard({ forceUpd, task}) {
             </CardFooter>
           </div>
           
-          <div className="flex flex-wrap justify-around gap-3 p-6 sm:flex-col sm:justify-center sm:h-full sm:w-40">
+          <div className="flex flex-wrap sm:flex-nowrap justify-around gap-3 p-6 sm:flex-col sm:justify-center sm:h-full sm:w-40">
             { formatState(task.state) == "deployed" ? <>
               <FundTaskModal taskId={task.id}
                 disabledState={!formatState(task.state) == "deployed" || task.fundingCompleted}
