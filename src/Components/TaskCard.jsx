@@ -92,7 +92,7 @@ function TaskCard({ forceUpd, task}) {
           </div>
           
           <div className="flex flex-wrap justify-around gap-3 p-6 sm:flex-col sm:justify-center sm:h-full sm:w-40">
-            { formatState(task.state) == "deployed" ?<>
+            { formatState(task.state) == "deployed" ? <>
               <FundTaskModal taskId={task.id}
                 disabledState={!formatState(task.state) == "deployed" || task.fundingCompleted}
                 forceUpdate={setForceUpdate}/>
@@ -105,14 +105,14 @@ function TaskCard({ forceUpd, task}) {
                 disabledState={!formatState(task.state) == "deployed" || task.fundingCompleted} 
                 forceUpdate={setForceUpdate}/>
               : null}
-            { true /* formatState(task.state) == "started" */ ?<> {/*  to add: check if this account can download weights (check round) */}
+            { formatState(task.state) == "started" ? <> {/*  to add: check if this account can download weights (check round) */}
               <GetWeightsBtn taskId={task.id} // to be implemented
                 disabledState={!formatState(task.state) == "deployed"}
                 forceUpdate={setForceUpdate}/>
             </>: null}
-            { true /*formatState(task.state) == "started"  && task.isWorkerSelected */  ?<>
+            { formatState(task.state) == "started" && task.isWorkerSelected ? <>
             <CommitWorkModal taskId={task.id}
-              disabledState={!formatState(task.state) == "deployed" /* || task.hasCommitted */}
+              disabledState={!formatState(task.state) == "deployed" || task.hasCommitted}
               forceUpdate={setForceUpdate}/>
             </>: null}
             <DownloadFileButton ipfsCID={task.file}

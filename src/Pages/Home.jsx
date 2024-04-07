@@ -46,12 +46,13 @@ function Home() {
       return () => clearTimeout(timeout);
     }
 
-    //events
+  }, [contract, wallet, forceUpdate]);
+
+  // EVENTS
+  useEffect(() => {
     const cleanUpFunct = setHomeEvents(setForceUpdate);
     if (cleanUpFunct) return () => cleanUpFunct();
-    
-    
-  }, [contract, wallet, forceUpdate]);
+  }, [contract, wallet]);
 
   // filter tasks when filters or tasks change
   useEffect(() => {
@@ -59,8 +60,6 @@ function Home() {
       return filterFunction(task);
     }));
   }, [filters, tasks]);
-
-
 
 
 

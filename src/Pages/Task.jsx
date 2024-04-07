@@ -43,12 +43,13 @@ function Task() {
       }, 2000);
       return () => clearTimeout(timeout);
     }
+  }, [contract, wallet, forceUpdate]);
 
-    //events
+  // EVENTS
+  useEffect(() => {
     const cleanUpFunct = setTaskEvents(id, setForceUpdate);
     if (cleanUpFunct) return () => cleanUpFunct();
-
-  }, [contract, wallet, forceUpdate]);
+  }, [contract, wallet]);
 
   if (!task)
     return (<h1 className="text-xl m-auto text-center"> {loading ? "Loading..." : `Task #${id} not found 😞`} </h1>);
@@ -75,23 +76,27 @@ function Task() {
         </CardHeader>
         <CardContent className="flex flex-col gap-2">
           <CardDescription>{task.description}</CardDescription>
-          <p>Admin: {formatAddress(String(task.admin))}</p>
-          <p>Funding completed: {String(task.fundingCompleted)}</p>
-          <p>Current round: {String(task.currentRound)}</p>{/* something to change here on initialization*/}
-          <p>numberOfRounds: {String(task.numberOfRounds)}</p>
-          <p>registeredWorkers: {String(task.registeredWorkers)}</p>
-          <p>rounds (struct): {String(task.rounds)}</p>
-          <p>Are you selected for current round?: {String(task.isWorkerSelected)}</p>
-          <p>workersPerRound: {String(task.workersPerRound)}</p>
-          <p>total workers required: {String(task.workersPerRound * task.numberOfRounds)}</p>
-          <hr />
-          <p>Funds: {String(task.funds)} (wei)</p>
-          <p>Funders: {String(task.funders)}</p>
-          <hr />
+          <p>Funds (wei): {Number(task.funds)}</p>
+          <p># Funders: {String(task.funders.length)}</p>
+          <p>Admin Address: {formatAddress(String(task.admin))}</p>
+          <p>Workers per round: {String(task.workersPerRound)}</p>
+          <p>Workers: {String(task.registeredWorkers.length)}/{String(task.workersPerRound*task.numberOfRounds)}</p>
+          {formatState(task.state) == "deployed"?<>
+            <p>Funding completed: {task.fundingCompleted ? "Yes": "No"}</p>
+            <p># Rounds: {String(task.numberOfRounds)}</p>
+          </> : null}
+          {formatState(task.state) == "started"?<>
+            <p>Current Round: {String(task.rounds.length)} of {String(task.numberOfRounds)}</p>{/* something to change here on initialization*/}
+            <p>Committed Works in this round: {String(task.rounds[task.rounds.length-1].committedWorks.length)}/{String(task.workersPerRound)}</p>
+            {wallet.accounts.length > 0 ?<>
+              <p>Are you selected for current round?: {task.isWorkerSelected ? "Yes" : "No"}</p>
+              {/* insert which is the round of the current connected account if task.amWorker */}
+            </>: null}
+          </> : null}
 
         </CardContent>
         <CardFooter className="flex gap-3 justify-center items-end w-full h-full">
-          { formatState(task.state) == "deployed" ?<>
+          { formatState(task.state) == "deployed" ? <>
             <FundTaskModal taskId={task.id}
               disabledState={!formatState(task.state) == "deployed" || task.fundingCompleted}
               forceUpdate={setForceUpdate}/>
@@ -104,12 +109,12 @@ function Task() {
               disabledState={!formatState(task.state) == "deployed" || task.fundingCompleted} 
               forceUpdate={setForceUpdate}/>
             : null}
-          { true /* formatState(task.state) == "started" */ ?<> {/*  to add: check if this account can download weights (check round) */}
+          { formatState(task.state) == "started" ? <> {/*  to add: check if this account can download weights (check round) */}
             <GetWeightsBtn taskId={task.id} // to be implemented
               disabledState={!formatState(task.state) == "deployed"}
               forceUpdate={setForceUpdate}/>
           </>: null}
-          { true /*formatState(task.state) == "started"  && task.isWorkerSelected */  ?<>
+          { formatState(task.state) == "started" && task.isWorkerSelected ? <>
           <CommitWorkModal taskId={task.id}
             disabledState={!formatState(task.state) == "deployed" || task.hasCommitted}
             forceUpdate={setForceUpdate}/>
