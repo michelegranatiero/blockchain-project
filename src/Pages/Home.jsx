@@ -50,7 +50,9 @@ function Home() {
 
   // EVENTS
   useEffect(() => {
+    if (!contract) return;
     const cleanUpFunct = setHomeEvents(setForceUpdate);
+    
     if (cleanUpFunct) return () => cleanUpFunct();
   }, [contract, wallet]);
 

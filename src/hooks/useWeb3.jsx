@@ -28,32 +28,57 @@ export const Web3ContextProvider = ({children}) => {
     if (!contract) return;
   
     //console.log(contract.events);
-    contract.events.Deployed().on('data', (eventData) => {
+    const deployedEmitter = contract.events.Deployed();
+    deployedEmitter.on('data', (eventData) => {
       console.log("Event data:", eventData);
       setUpdate((k) => k + 1);
     });
 
-    /* contract.events.NewFunding().on('data', (eventData) => {
+    const registeredEmitter = contract.events.Registered();
+    registeredEmitter.on('data', (eventData) => {
       console.log("Event data:", eventData);
       setUpdate((k) => k + 1);
-    }); */
+    });
 
-    contract.events.NeedRandomness().on('data', (eventData) => {
+    /* const newFundingEmitter = contract.events.NewFunding()
+      newFundingEmitter.on('data', (eventData) => {
+        console.log("Event data:", eventData);
+        setUpdate((k) => k + 1);
+      }); */
+
+    const stopFundingEmitter = contract.events.StopFunding();
+    stopFundingEmitter.on('data', (eventData) => {
+      console.log("Event data:", eventData);
+      setUpdate((k) => k + 1);
+    });
+
+    const needRandomnessEmitter = contract.events.NeedRandomness()
+    needRandomnessEmitter.on('data', (eventData) => {
       console.log("Event data:", eventData);
       setUpdate((k) => k + 1);
     });
     
-    contract.events.RoundStarted().on('data', (eventData) => {
+    const roundStartedEmitter = contract.events.RoundStarted();
+    roundStartedEmitter.on('data', (eventData) => {
       console.log("Event data:", eventData);
       setUpdate((k) => k + 1);
     });
 
-    contract.events.TaskEnded().on('data', (eventData) => {
+    const taskEndedEmitter = contract.events.TaskEnded();
+    taskEndedEmitter.on('data', (eventData) => {
       console.log("Event data:", eventData);
       setUpdate((k) => k + 1);
     });
 
-    return () => contract.events.allEvents().removeAllListeners();
+    return () => {
+      //contract.events.allEvents().removeAllListeners();
+      deployedEmitter.removeAllListeners();
+      registeredEmitter.removeAllListeners();
+      stopFundingEmitter.removeAllListeners();
+      needRandomnessEmitter.removeAllListeners();
+      roundStartedEmitter.removeAllListeners();
+      taskEndedEmitter.removeAllListeners();
+    }
 
     /* const event1 = contract.events.Deployed({
       filter: {
@@ -72,20 +97,33 @@ export const Web3ContextProvider = ({children}) => {
   };
 
 
+
   const setTaskEvents = (taskId, setUpdate) => {
     if (!contract) return;
 
-    contract.events.NewFunding({ filter: { taskId: taskId } }).on('data', (eventData) => {
+    const registeredEmitter = contract.events.Registered({ filter: { taskId: taskId } });
+    registeredEmitter.on('data', (eventData) => {
+      console.log("Event data:", eventData);
+      setUpdate((k) => k + 1);
+    });
+
+    const newFundingEmitter = contract.events.NewFunding({ filter: { taskId: taskId } });
+    newFundingEmitter.on('data', (eventData) => {
       console.log("Event data:", eventData);
       console.log("Values:", eventData.returnValues);
       
       setUpdate((k) => k + 1);
     });
 
+    const stopFundingEmitter = contract.events.StopFunding({ filter: { taskId: taskId } });
+    stopFundingEmitter.on('data', (eventData) => {
+      console.log("Event data:", eventData);
+      setUpdate((k) => k + 1);
+    });
 
-
-    // TO BE REMOVED, just for debugging
-    contract.events.NeedRandomness({ filter: { taskId: taskId } }).on('data', (eventData) => {
+    // trycatch TO BE REMOVED, just for debugging
+    const needRandomnessEmitter = contract.events.NeedRandomness({ filter: { taskId: taskId } });
+    needRandomnessEmitter.on('data', (eventData) => {
       console.log("Event data:", eventData);
       const data = eventData.returnValues;
       try {
@@ -94,23 +132,31 @@ export const Web3ContextProvider = ({children}) => {
       } catch (error) {
         console.log("error setting randomness:", error);
       }
-      
-
 
       setUpdate((k) => k + 1);
     });
 
-    contract.events.RoundStarted({ filter: { taskId: taskId } }).on('data', (eventData) => {
+    const roundStartedEmitter = contract.events.RoundStarted({ filter: { taskId: taskId } });
+    roundStartedEmitter.on('data', (eventData) => {
       console.log("Event data:", eventData);
       setUpdate((k) => k + 1);
     });
 
-    contract.events.TaskEnded({ filter: { taskId: taskId } }).on('data', (eventData) => {
+    const taskEndedEmitter = contract.events.TaskEnded({ filter: { taskId: taskId } });
+    taskEndedEmitter.on('data', (eventData) => {
       console.log("Event data:", eventData);
       setUpdate((k) => k + 1);
     });
 
-    return () => contract.events.allEvents().removeAllListeners();
+    return () => {
+      //contract.events.allEvents().removeAllListeners();
+      registeredEmitter.removeAllListeners();
+      newFundingEmitter.removeAllListeners();
+      stopFundingEmitter.removeAllListeners();
+      needRandomnessEmitter.removeAllListeners();
+      roundStartedEmitter.removeAllListeners();
+      taskEndedEmitter.removeAllListeners();
+    }
   
   }
 
@@ -169,16 +215,25 @@ export const Web3ContextProvider = ({children}) => {
     }
     try {
       const task = await contract.methods.getTask(taskId).call();
+      
+      
 
       if (wallet.accounts.length > 0) {
         let roles = await getRoles(task.id);
-        task.amFunder = roles.funder;
-        task.amWorker = roles.worker;
-        task.amAdmin = roles.admin;
+        task.amFunder = roles.isFunder;
+        task.amWorker = roles.isWorker;
+        task.amAdmin = roles.isAdmin;
         // check if task started
+
+        
+        
+        
         if (formatState(task.state) == "started") {
           task.hasCommitted = task.rounds.length > 0 ? await hasCommitted(task.id, wallet.accounts[0]) : true;
           task.isWorkerSelected = task.rounds.length > 0 ? await isWorkerSelected(task.id, wallet.accounts[0]) : false;
+          // selected round for the user (worker)
+          task.workerRound = task.amWorker ? Math.floor(task.registeredWorkers.findIndex(
+            (elem)=> elem == wallet.accounts[0]) / Number(task.workersPerRound))+1 : false;
         }
       }
 
@@ -189,7 +244,7 @@ export const Web3ContextProvider = ({children}) => {
       }
 
       //decode CID to ipfs CID
-      const ipfsCID = decode2Bytes32toCID(task.hashPart1, task.hashPart2)
+      const ipfsCID = decode2Bytes32toCID(task.model.hashPart1, task.model.hashPart2)
 
       //fetch from ipfs
       const ipfsObj = await fetchFromIPFS(ipfsCID);

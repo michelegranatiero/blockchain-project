@@ -97,7 +97,7 @@ function TaskCard({ forceUpd, task}) {
                 disabledState={!formatState(task.state) == "deployed" || task.fundingCompleted}
                 forceUpdate={setForceUpdate}/>
               <RegisterTaskModal taskId={task.id}
-                disabledState={task.amWorker || !formatState(task.state) == "deployed"} 
+                disabledState={task.amWorker || !formatState(task.state) == "deployed" || task.registeredWorkers.length >= task.workersPerRound*task.numberOfRounds} 
                 forceUpdate={setForceUpdate}/>
             </>: null}
             { formatState(task.state) == "deployed" && task.amAdmin ?

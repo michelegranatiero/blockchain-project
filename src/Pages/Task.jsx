@@ -47,7 +47,9 @@ function Task() {
 
   // EVENTS
   useEffect(() => {
+    if (!contract) return;
     const cleanUpFunct = setTaskEvents(id, setForceUpdate);
+    
     if (cleanUpFunct) return () => cleanUpFunct();
   }, [contract, wallet]);
 
@@ -94,7 +96,7 @@ function Task() {
             <p>Committed Works in this round: {String(task.rounds[task.rounds.length-1].committedWorks.length)}/{String(task.workersPerRound)}</p>
             {wallet.accounts.length > 0 ?<>
               <p>Are you selected for current round?: {task.isWorkerSelected ? "Yes" : "No"}</p>
-              {/* insert which is the round of the current connected account if task.amWorker */}
+              {task.amWorker ? <p>You are selected for round: {String(task.workerRound)}</p>: null}
             </>: null}
           </> : null}
 
@@ -105,7 +107,7 @@ function Task() {
               disabledState={!formatState(task.state) == "deployed" || task.fundingCompleted}
               forceUpdate={setForceUpdate}/>
             <RegisterTaskModal taskId={task.id}
-              disabledState={task.amWorker || !formatState(task.state) == "deployed"} 
+              disabledState={task.amWorker || !formatState(task.state) == "deployed" || task.registeredWorkers.length >= task.workersPerRound*task.numberOfRounds} 
               forceUpdate={setForceUpdate}/>
           </>: null}
           { formatState(task.state) == "deployed" && task.amAdmin ?
