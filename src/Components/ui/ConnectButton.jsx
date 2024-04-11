@@ -11,7 +11,7 @@ import { useMetaMask } from '@/hooks/useMetaMask'
 import  { formatAddress } from '@/utils/formatWeb3'
 import { Button } from "@/Components/ui/button";
 
-function ConnectButton() {
+function ConnectButton({className=""}) {
 
   const { wallet, hasProvider, isConnecting, connectMetaMask, disconnectMetaMask } = useMetaMask()
 
@@ -23,7 +23,7 @@ function ConnectButton() {
     <>
     {hasProvider && wallet.accounts.length > 0 ? 
       <DropdownMenu>
-        <DropdownMenuTrigger asChild>
+        <DropdownMenuTrigger asChild className={` ${className}`}>
           <Button variant="outline"> {formatAddress(wallet.accounts[0])} </Button>
         </DropdownMenuTrigger>
         

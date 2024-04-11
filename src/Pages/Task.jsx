@@ -101,7 +101,7 @@ function Task() {
           </> : null}
 
         </CardContent>
-        <CardFooter className="flex gap-3 justify-center items-end w-full h-full">
+        <CardFooter className="flex flex-wrap gap-3 justify-center items-end w-full mt-auto">
           { formatState(task.state) == "deployed" ? <>
             <FundTaskModal taskId={task.id}
               disabledState={!formatState(task.state) == "deployed" || task.fundingCompleted}

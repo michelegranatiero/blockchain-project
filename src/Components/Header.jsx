@@ -35,7 +35,7 @@ function Header() {
   return (
     <header className="sticky top-0 z-50 border-b bg-background/75 px-4 py-3 backdrop-blur sm:flex sm:justify-between">
       <Container>
-        <div className="ms:px-6 relative flex h-12 w-full items-center justify-between px-4 lg:px-8">
+        <div className="ms:px-6 relative flex h-12 w-full items-center justify-between px-4 lg:px-8 gap-3">
           <div className="flex items-center">
             <Sheet>
               <SheetTrigger>
@@ -97,7 +97,7 @@ function Header() {
           </nav>
           <div className="flex items-center">
             <Button
-              variant="ghost"
+              variant="outline"
               size="icon"
               className="mr-6"
               aria-label="Toggle Theme"
@@ -106,7 +106,7 @@ function Header() {
               <Moon className="absolute h-6 w-6 rotate-90 scale-0 transition-all dark:-rotate-0 dark:scale-100" />
               <span className="sr-only"> Toggle Theme</span>
             </Button>
-            <ConnectButton />
+            <ConnectButton/>
           </div>
         </div>
       </Container>
