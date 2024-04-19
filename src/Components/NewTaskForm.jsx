@@ -62,7 +62,7 @@ function NewTaskForm({setOpenState, forceUpdate}) {
     const response = await createTask(values.title, values.descr, values.numRounds, values.workersPerRound, values.file[0]);
     if (response){
       setOpenState(false);
-      alert("Task created successfully");
+      console.log("Task created successfully");
       //window.location.reload();
       forceUpdate((k) => k + 1);
     } 

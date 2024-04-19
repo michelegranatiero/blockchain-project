@@ -20,7 +20,7 @@ import CommitWorkModal from "@/Components/CommitWorkModal";
 import StopFundingModal from "@/Components/StopFundingModal";
 
 function Task() {
-  const { wallet, contract, getTask, setTaskEvents} = useWeb3();
+  const { wallet, contract, getTask, setEvents} = useWeb3();
 
   const { id } = useParams();
 
@@ -46,9 +46,10 @@ function Task() {
   }, [contract, wallet, forceUpdate]);
 
   // EVENTS
+  const taskEvents = ["Registered", "NewFunding", "StopFunding", "NeedRandomness", "RoundStarted", "TaskEnded"];
   useEffect(() => {
     if (!contract) return;
-    const cleanUpFunct = setTaskEvents(id, setForceUpdate);
+    const cleanUpFunct = setEvents(taskEvents, setForceUpdate, {taskId: id});
     
     if (cleanUpFunct) return () => cleanUpFunct();
   }, [contract, wallet]);
@@ -96,8 +97,16 @@ function Task() {
             <p>Committed Works in this round: {String(task.rounds[task.rounds.length-1].committedWorks.length)}/{String(task.workersPerRound)}</p>
             {wallet.accounts.length > 0 ?<>
               <p>Are you selected for current round?: {task.isWorkerSelected ? "Yes" : "No"}</p>
-              {task.amWorker ? <p>You are selected for round: {String(task.workerRound)}</p>: null}
             </>: null}
+          </> : null}
+          {["started","completed"].includes(formatState(task.state)) ?<>
+            {wallet.accounts.length > 0 ?<>
+              {task.amWorker ? <p>You are selected for round: {String(task.workerRound)}</p>: null}
+              {task.rounds.length > task.workerRound+1 /* also need to display ranking for last round */? 
+                <p> Worker Round Ranking: {JSON.stringify(task.workerRanking)}</p>: null}
+            </>: null}
+            {task.rounds.length > 2 || formatState(task.state) == "completed" ?
+             <p> Latest Ranking Available (round): {JSON.stringify(task.roundRanking)}</p>: null}
           </> : null}
 
         </CardContent>

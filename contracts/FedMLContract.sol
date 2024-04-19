@@ -354,7 +354,7 @@ contract FedMLContract {
     //    emit TaskEnded(_taskId);
     //}
 
-    function getRanking(uint _taskId) validTask(_taskId) external view returns (uint[][] memory) {
+/*     function getRanking(uint _taskId) validTask(_taskId) external view returns (uint[][] memory) {
         Task storage task = taskList[_taskId];
         uint numOfRounds = task.numberOfRounds;
         uint[][] memory ranking = new uint[][](numOfRounds);
@@ -366,6 +366,12 @@ contract FedMLContract {
             }
         }
         return ranking;
+    } */
+
+    function getRoundRanking(uint _taskId, uint _round) validTask(_taskId) external view returns (uint[] memory) {
+        Task storage task = taskList[_taskId];
+        require(_round < task.rounds.length); // available from round 1 until current round - 1 
+        return task.rounds[_round-1].ranking; // index adjustment
     }
 
     // this fetches the work of the workers for ALL THE ROUNDS, to fix

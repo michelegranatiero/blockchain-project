@@ -28,26 +28,30 @@ import {
   FormMessage,
 } from "@/Components/ui/form"
 
-const commitSchema = z.object({
-  votesFile: z.instanceof(FileList).refine((file) => {
-    
-    if (file.length == 0 || !file || file[0].type != "application/json") return false;
-    return true;
-  }),
-  commitFile: z.instanceof(FileList).refine((file) => {
-    if (file.length == 0 || !file) return false;
-    return true;
-  }),
-})
-
 // CHECK IF WORKER HAS ALREADY COMMITED WORK! EVEN IN SMART CONTRACT
 
 function CommitWorkModal({ className = "", disabledState = false, task, forceUpdate}) {
+
+  const commitSchema = z.object({
+    votesFile: z.any().refine((file) => {      
+      if (task.rounds.length > 1 &&
+         (file.length == 0 || !file || file[0].type != "application/json" || !(file instanceof FileList))) return false;
+      return true;
+    }),
+    commitFile: z.any().refine((file) => {      
+      if (task.rounds.length < task.numberOfRounds && (file.length == 0 || !file || !(file instanceof FileList))) return false;
+      return true;
+    }),
+  })
   
   const {wallet, commitWork} = useWeb3(); // create commitWork function in useWeb3
 
   const form = useForm({
     resolver: zodResolver(commitSchema),
+    defaultValues: {
+      votesFile: "",
+      commitFile: "",
+    },
   });
 
   const [open, setOpen] = useState(false);
@@ -60,11 +64,10 @@ function CommitWorkModal({ className = "", disabledState = false, task, forceUpd
     // Do something with the form values.
     // ✅ This will be type-safe and validated.
     setloadingBtn(true);
-
     const res = await commitWork( task, values.commitFile[0], values.votesFile[0]);
     if (res) {
       setOpen(false);
-      alert("Transaction successful");
+      console.log("Transaction successful");
       //window.location.reload();
       forceUpdate((k) => k + 1);
     }else alert("Transaction canceled or denied.");
@@ -89,11 +92,12 @@ function CommitWorkModal({ className = "", disabledState = false, task, forceUpd
         <DialogHeader>
           <DialogTitle>Commit your work</DialogTitle>
           <DialogDescription>
-            insert your votes and file with your weights.
+            insert your files.
           </DialogDescription>
         </DialogHeader>
         <Form {...form} >
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+          {task.rounds.length > 1 ?
             <FormField
               control={form.control}
               name="votesFile"
@@ -106,7 +110,8 @@ function CommitWorkModal({ className = "", disabledState = false, task, forceUpd
                   <FormMessage />
                 </FormItem>
               )}
-            />
+            /> : null}
+          {task.rounds.length < task.numberOfRounds ? 
             <FormField
               control={form.control}
               name="commitFile"
@@ -120,6 +125,7 @@ function CommitWorkModal({ className = "", disabledState = false, task, forceUpd
                 </FormItem>
               )}
             />
+            : null}
           {/* <div className='text-end'> */}
           <DialogFooter >
             <DialogClose asChild>
@@ -134,11 +140,7 @@ function CommitWorkModal({ className = "", disabledState = false, task, forceUpd
             </Button>
             : <Button type="submit">Commit</Button>
             }
-            
           </DialogFooter>
-            
-          {/* </div> */}
-
         </form>
         </Form>
         

@@ -26,7 +26,7 @@ export const sendToIPFS = async (fileObj, name) => {
          
   } catch (error) {
     console.log(error.message);
-    alert("Trouble uploading file");
+    alert("Error uploading file to ipfs");
   }
 }
 
