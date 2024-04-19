@@ -29,8 +29,12 @@ import {
 } from "@/Components/ui/form"
 
 const commitSchema = z.object({
-  votes: z.coerce.number().min(2).max(1000), // how should they be????
-  file: z.instanceof(FileList).refine((file) => {
+  votesFile: z.instanceof(FileList).refine((file) => {
+    
+    if (file.length == 0 || !file || file[0].type != "application/json") return false;
+    return true;
+  }),
+  commitFile: z.instanceof(FileList).refine((file) => {
     if (file.length == 0 || !file) return false;
     return true;
   }),
@@ -38,28 +42,26 @@ const commitSchema = z.object({
 
 // CHECK IF WORKER HAS ALREADY COMMITED WORK! EVEN IN SMART CONTRACT
 
-function CommitWorkModal({ className = "", disabledState = false, taskId, forceUpdate}) {
+function CommitWorkModal({ className = "", disabledState = false, task, forceUpdate}) {
   
   const {wallet, commitWork} = useWeb3(); // create commitWork function in useWeb3
 
   const form = useForm({
     resolver: zodResolver(commitSchema),
-    defaultValues: {
-      votes: "", // how should they be?
-    },
   });
 
   const [open, setOpen] = useState(false);
   const [loadingBtn, setloadingBtn] = useState(false);
 
-  const fileRef = form.register("file"); // fundamental for input file
+  const commitFileRef = form.register("commitFile"); // fundamental for input file
+  const votesFileRef = form.register("votesFile"); // fundamental for input file
   
   async function onSubmit(values){
     // Do something with the form values.
     // ✅ This will be type-safe and validated.
     setloadingBtn(true);
 
-    const res = await commitWork( taskId, values.file[0], values.votes);
+    const res = await commitWork( task, values.commitFile[0], values.votesFile[0]);
     if (res) {
       setOpen(false);
       alert("Transaction successful");
@@ -76,22 +78,6 @@ function CommitWorkModal({ className = "", disabledState = false, taskId, forceU
     }else setOpen(!open);
 
   }
-
-  const formFields = [
-    {
-      name: "votes",
-      label: "Votes",
-      type: "number",
-      placeholder: "votes",
-    },
-    {
-      name: "file",
-      label: "file",
-      type: "file",
-      placeholder: "",
-    },
-  ]
-
 
 
   return (
@@ -110,12 +96,12 @@ function CommitWorkModal({ className = "", disabledState = false, taskId, forceU
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
             <FormField
               control={form.control}
-              name="votes"
+              name="votesFile"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel htmlFor="votes">Votes</FormLabel>
+                  <FormLabel htmlFor="votesFile">Votes File (.json)</FormLabel>
                   <FormControl>
-                    <Input type="number" placeholder="votes" {...field}/>
+                    <Input type="file"{...votesFileRef} accept="application/json" />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -123,12 +109,12 @@ function CommitWorkModal({ className = "", disabledState = false, taskId, forceU
             />
             <FormField
               control={form.control}
-              name="file"
+              name="commitFile"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel htmlFor="file">File</FormLabel>
+                  <FormLabel htmlFor="commitFile">Commit File (.pickle)</FormLabel>
                   <FormControl>
-                    <Input type="file" {...fileRef}/>
+                    <Input type="file" {...commitFileRef}/>
                   </FormControl>
                   <FormMessage />
                 </FormItem>

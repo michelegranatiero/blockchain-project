@@ -369,7 +369,7 @@ contract FedMLContract {
     }
 
     // this fetches the work of the workers for ALL THE ROUNDS, to fix
-    function getWork(uint _taskId) validTask(_taskId) external view returns (Commit[][] memory) {
+    /* function getWork(uint _taskId) validTask(_taskId) external view returns (Commit[][] memory) {
         Task storage task = taskList[_taskId];
         uint numOfRounds = task.numberOfRounds; // fix this, numberOfRounds is the total
         Commit[][] memory commits = new Commit[][](numOfRounds);
@@ -377,17 +377,12 @@ contract FedMLContract {
             commits[i] = task.rounds[i].committedWorks;
         }
         return commits; // now it contains the worker, the first part of the hash and the sencond part of the hash
-    }
+    } */
 
-    // should be removed?
-    //function getWorkers(uint _taskId) validTask(_taskId) external view returns (address[][] memory) {
-        //Task storage task = taskList[_taskId];
-        //uint numOfRounds = task.numberOfRounds;
-        //address[][] memory workers = new address[][](numOfRounds);
-        //for (uint i = 0; i < numOfRounds; i++) {
-            //workers[i] = task.rounds[i].workers;
-        //}
-        //return workers;
-    //}
+    function getRoundWork(uint _taskId, uint _round) validTask(_taskId) external view returns (Commit[] memory) {
+        Task storage task = taskList[_taskId];
+        require(_round < task.rounds.length); // available from round 1 until current round - 1 
+        return task.rounds[_round-1].committedWorks; // index adjustment
+    }
 
 }

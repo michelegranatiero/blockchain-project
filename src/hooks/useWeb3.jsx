@@ -3,6 +3,9 @@ import { useMetaMask } from './useMetaMask';
 
 import { Web3 } from 'web3';
 
+import JSZip from 'jszip';
+import { saveAs } from 'file-saver';
+
 import { contractAddress, contractAbi} from '@/utils/constants';
 import  { formatState } from '@/utils/formatWeb3'
 import { sendToIPFS,fetchFromIPFS, fileToBase64, downloadFile, encodeCIDto2Bytes32, decode2Bytes32toCID } from '@/utils/ipfsFunctions';
@@ -224,9 +227,6 @@ export const Web3ContextProvider = ({children}) => {
         task.amWorker = roles.isWorker;
         task.amAdmin = roles.isAdmin;
         // check if task started
-
-        
-        
         
         if (formatState(task.state) == "started") {
           task.hasCommitted = task.rounds.length > 0 ? await hasCommitted(task.id, wallet.accounts[0]) : true;
@@ -403,16 +403,56 @@ export const Web3ContextProvider = ({children}) => {
 
 
   // DA CONTROLLARE (SU SMART CONTRACT)
-  const commitWork = async (taskId, workFile, votes) => { /* VOTES SHOULD BE AN ARRAY, still to be defined */
-    votes = [1,2]// TO BE CHANGED, just for debugging
+  const commitWork = async (task, workFile, votesFile) => { /* VOTES SHOULD BE AN ARRAY, still to be defined */
     if (!contract) {
       console.error("Contract instance is not available.");
-      return;
+      return false;
     }
     try {
-      // upload file to IPFS
+      if (task.rounds.length == 0) return false; // task not started yet
+
+      const votes = [];
+      if (task.rounds.length == 1){
+        votes.push(1,2)// TO BE CHANGED, just for debugging
+      }
+      else if (task.rounds.length > 1){
+        //handle json file
+        const previousRoundWorkers = [];
+        
+        for (let i = 0; i < Number(task.workersPerRound); i++) {
+          previousRoundWorkers.push(task.registeredWorkers[(Number(task.workersPerRound)*(task.rounds.length-2)) + i]);
+          //previousRoundWorkers.push(task.rounds[task.rounds.length - 1].committedWorks[i].committer);
+        }
+
+        const votesText = await votesFile.text();
+        const votesObj = JSON.parse(votesText);
+        
+
+        if (votesObj.length != previousRoundWorkers.length){
+          console.log("size doesn't match");
+          
+          return false; // size doesn't match
+        }
+
+        // Check if every address of previousRoundWorkers is in the votesFile
+        for (let i = 0; i < previousRoundWorkers.length; i++) {
+          let idx = votesObj.findIndex(elem => elem.address == previousRoundWorkers[i]);
+          if (idx == -1){
+            console.log("address not found");
+            return false; // address not found
+          }
+          votes.push(votesObj[idx].vote);
+        }
+      }
+
+
+      // upload workfile to IPFS
+      console.log(workFile);
+      
       const fileB64 = await fileToBase64(workFile);
-      const fileObj = { name: workFile.name, content: fileB64, type: workFile.type };
+      const extension = workFile.name.split('.').pop();
+      //const fileObj = { name: workFile.name, content: fileB64, type: workFile.type };
+      const fileObj = { name: `${wallet.accounts[0]}.${extension}`, content: fileB64, type: workFile.type };
       const ipfsCID = await sendToIPFS(fileObj, workFile.name);
       if (!ipfsCID) {
         alert("Error uploading file to IPFS.");
@@ -421,11 +461,15 @@ export const Web3ContextProvider = ({children}) => {
 
       // encode CID to 2 bytes32
       const [workPart1, workPart2] = encodeCIDto2Bytes32(ipfsCID);
-
-      const res = await contract.methods.commitWork(taskId, workPart1, workPart2, votes).send({ from: wallet.accounts[0] });
+      
+      console.log(task.id, workPart1, workPart2, votes);
+      
+      const res = await contract.methods.commitWork(task.id, workPart1, workPart2, votes).send({ from: wallet.accounts[0] });
+      
       return res
     } catch (error) {
       console.error("Error committing work:", error);
+      return false
     }
   }
 
@@ -445,14 +489,47 @@ export const Web3ContextProvider = ({children}) => {
   }
 
 
-  const getWork = async (taskId) => {
+  const getRoundWork = async (taskId, round) => {
     if (!contract) {
       console.error("Contract instance is not available.");
       return;
     }
     try {
-      const res = await contract.methods.getWork(taskId).call({ from: wallet.accounts[0] });
-      return res
+      const res = await contract.methods.getRoundWork(taskId, round).call(/* { from: wallet.accounts[0] } */);
+      console.log(res);
+
+      const workFiles = [];      
+      for (let i = 0; i < res.length; i++) {
+
+        //decode CID to ipfs CID        
+        const ipfsCID = decode2Bytes32toCID(res[i].hashPart1, res[i].hashPart2)
+
+        //fetch from ipfs
+        const ipfsObj = await fetchFromIPFS(ipfsCID);
+        
+        /* task.title = ipfsObj.title;
+        task.description = ipfsObj.description;
+        task.file = ipfsObj.file; */
+
+        workFiles.push(ipfsObj); //??
+      }
+      // add files to zip and return zip file with jszip
+      const zip = new JSZip();
+      //const folder = zip.folder("weightsFiles");
+      for (let i = 0; i < workFiles.length; i++) {
+        const file =  await fetch(workFiles[i].content).then(response => response.blob()).then(blob => {
+          return new File([blob], workFiles[i].name, {type: workFiles[i].type});
+        });
+        console.log(file);
+        
+        zip.file(workFiles[i].name, file);
+      }
+      zip.generateAsync({ type: "blob" }).then(blob => {
+        saveAs(blob, "weightsFiles.zip");
+      });
+      return true;
+
+
     } catch (error) {
       console.error("Error retriving work:", error);
     }
@@ -481,7 +558,7 @@ export const Web3ContextProvider = ({children}) => {
         hasCommitted,
         commitWork,
         getRanking,
-        getWork,
+        getRoundWork,
         // ipfsFunctions
         fetchFromIPFS,
         downloadFile,

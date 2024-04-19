@@ -3,9 +3,9 @@ import { useWeb3 } from "@/hooks/useWeb3";
 import { Button } from "@/Components/ui/button"
 import { Loader2 } from "lucide-react"
 
-function GetWeightsBtn({ className = "", disabledState = false, taskId, forceUpdate}) {
+function GetWeightsBtn({ className = "", disabledState = false, taskId, round, forceUpdate}) {
 
-  const {wallet, getWork} = useWeb3();
+  const {wallet, getRoundWork, downloadFile} = useWeb3();
 
   const [loadingBtn, setloadingBtn] = useState(false);
 
@@ -18,14 +18,10 @@ function GetWeightsBtn({ className = "", disabledState = false, taskId, forceUpd
     }
 
     setloadingBtn(true);
-    const res = await getWork(taskId);
+    const res = await getRoundWork(taskId, round); //download zip file
     if (res) {
-      alert("Transaction successful");
-      //download weights...
-
-      //window.location.reload();
       forceUpdate((k) => k + 1);
-    }else alert("Transaction canceled or denied.");
+    }else alert("Request failed.");
     setloadingBtn(false);
   }
 

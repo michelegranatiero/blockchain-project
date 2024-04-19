@@ -105,13 +105,13 @@ function TaskCard({ forceUpd, task}) {
                 disabledState={!formatState(task.state) == "deployed" || task.fundingCompleted} 
                 forceUpdate={setForceUpdate}/>
               : null}
-            { formatState(task.state) == "started" ? <> {/*  to add: check if this account can download weights (check round) */}
-              <GetWeightsBtn taskId={task.id} // to be implemented
+            { formatState(task.state) == "started" && task.isWorkerSelected && task.rounds.length > 1 ? <>
+              <GetWeightsBtn taskId={task.id} round={task.rounds.length-1}// to be implemented
                 disabledState={!formatState(task.state) == "deployed"}
                 forceUpdate={setForceUpdate}/>
             </>: null}
             { formatState(task.state) == "started" && task.isWorkerSelected ? <>
-            <CommitWorkModal taskId={task.id}
+            <CommitWorkModal task={task}
               disabledState={!formatState(task.state) == "deployed" || task.hasCommitted}
               forceUpdate={setForceUpdate}/>
             </>: null}
