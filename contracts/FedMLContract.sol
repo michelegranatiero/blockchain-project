@@ -6,10 +6,7 @@ import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import "@openzeppelin/contracts/utils/structs/EnumerableMap.sol";
 
 // compress input data taken from the user
-
 // enable optimizer when deploying the contract for optimize future transactional cost (entails more cost on deploy)
-
-//check if a modifier is better than a function for saving gas. A: it depends by the context there is no rule for that.
 
 contract FedMLContract {
 
@@ -24,11 +21,16 @@ contract FedMLContract {
     event TaskEnded(uint taskId);
     //event Selected(uint taskId, address[] workers, uint roundNumber);
 
+    // private variables ???
+    address payable owner;
+    address oracle;
 
-    enum State {DEPLOYED, STARTED, COMPLETED}
+    constructor (address _oracle) {
+       owner = payable(msg.sender);
+       oracle = _oracle;
+   }
 
-    //address oracle;
-    //address owner;
+    enum State {DEPLOYED, STARTED, COMPLETED, ABORTED}
 
     struct Commit {
         address committer;
@@ -37,8 +39,7 @@ contract FedMLContract {
     }
 
     struct Round {
-        //address[] workers; // use the same reasoning of ranking, so store instead of an address an unit16 (?)
-        uint[] ranking; // a smaller uint (?). A: workersPerRound is uint16, so uint256[] can become uint16[], A: surprisingly increases gas 
+        uint[] ranking; // Q: a smaller uint? A: workersPerRound is uint16, so uint256[] can become uint16[], BUT surprisingly increases gas 
         Commit[] committedWorks;
     }
 
@@ -46,6 +47,7 @@ contract FedMLContract {
         uint id; //32 bytes
         uint numberOfRounds;
         uint workersPerRound;
+        uint minFunds;
         Commit model; //initial weights
         address admin; //20 bytes //the admin of the task is stored inside the struct of the model
         State state; //1 bytes
@@ -53,38 +55,71 @@ contract FedMLContract {
         address[] registeredWorkers;
         Round[] rounds;
     }
- 
-    mapping (uint taskId => EnumerableMap.AddressToUintMap funderMap) taskFundersMap;
 
     uint public taskCounter = 0;
     mapping (uint taskId => Task task) taskList;
+ 
+    mapping (uint taskId => EnumerableMap.AddressToUintMap funderMap) taskFundersMap;
+    mapping (address => uint) pendingRewards; //rewards assigned to workers
+
+    modifier validTask(uint _taskId) {
+        require(_taskId < taskCounter);
+        _;
+    }
+
+    modifier onlyOwner() {
+        require(msg.sender == owner);
+        _;
+    }
+
+    function setOracle(address _oracle) onlyOwner external {
+        oracle = _oracle;
+    }
+
+    function abort(uint _taskId) internal {
+        Task storage task = taskList[_taskId];
+        task.state = State.ABORTED;
+    }
+
+    function terminate() onlyOwner external {
+        selfdestruct(owner); // it's deprecated
+    }
+
+    function withdrawAll() onlyOwner external payable {
+        // only the owner can invoke this function
+        owner.transfer(address(this).balance);
+    }
+
+    function withdrawReward() external payable {
+        uint amount = pendingRewards[msg.sender];
+        // what if amount is null ???
+        pendingRewards[msg.sender] = 0;
+        payable(msg.sender).transfer(amount);
+    }
 
     function deployTask(
         bytes32 _hashPart1,
         bytes32 _hashPart2,
         uint _numberOfRounds,
-        uint _workersPerRound
+        uint _workersPerRound,
+        uint _minFunds
         ) external {
         require(_workersPerRound > 1);
         require(_numberOfRounds > 1);
+        require(_minFunds > 0);
         Task storage task = taskList[taskCounter];
         task.id = taskCounter++;
         task.admin = msg.sender; //the admin of the task is stored inside the struct of the model
         task.model = Commit(msg.sender, _hashPart1, _hashPart2);
         task.numberOfRounds = _numberOfRounds;
         task.workersPerRound = _workersPerRound;
+        task.minFunds = _minFunds;
         task.fundingCompleted; //by default initialized to false (saves gas)
         task.state = State.DEPLOYED;
         emit Deployed(task.id);
     }
 
-    modifier validTask(uint _taskId) {
-        //require(_taskId < taskList.length);
-        require(_taskId < taskCounter);
-        _;
-    }
-
-    // ------------------------------------------- GETTERS -------------------------------------------
+    // ------------------------------------------- GETTERS --------------------------------------------
 
     /* function getAllTasks() external view returns (Task[] memory) {
         return taskList;
@@ -98,7 +133,8 @@ contract FedMLContract {
         return taskFundersMap[_taskId].keys();
     }
 
-    function getFundsAmount(uint _taskId) validTask(_taskId) external view returns (uint) {
+    // changed to public if we want to use it for the automatic change
+    function getFundsAmount(uint _taskId) validTask(_taskId) public view returns (uint) {
         uint totalFunds = 0;
         EnumerableMap.AddressToUintMap storage funderMap = taskFundersMap[_taskId]; 
         for (uint i = 0; i < funderMap.length(); i++) {
@@ -107,7 +143,6 @@ contract FedMLContract {
         }
         return totalFunds;
     }
-
 
     // Return the role of the sender within the specified task.
     // The returned value is a triple of bools, respectively indicating if it is a funder, a worker and an admin of the task. 
@@ -128,7 +163,7 @@ contract FedMLContract {
         EnumerableMap.AddressToUintMap storage funderMap = taskFundersMap[_taskId]; //taskList[_taskId].funderMap;
         // if the user is already a funder (he has already funded in the past)
         if (funderMap.contains(msg.sender)) {
-            // then increase the funding amount 
+            // then increase the funding amount
             funderMap.set(msg.sender, funderMap.get(msg.sender) + msg.value); //check if this is correct
         }
         else { //otherwise: New Funder
@@ -175,7 +210,6 @@ contract FedMLContract {
         task.registeredWorkers.push();
         task.registeredWorkers[numRegWorkers] = msg.sender; // no need to decrease by 1 because refers to the value before the push
         if (numRegWorkers+1 == workersRequired) { // numRegWorkers refers to the value before the push, so the +1 it's because of the push above
-            // task.registeringCompleted = true; // can be removed, is equivalent to perform the check task.registeredWorkers.length == task.workersRequired)
             if (task.fundingCompleted) {
                 emit NeedRandomness(_taskId, numberOfRounds, workersPerRound*10);
             }
@@ -370,7 +404,7 @@ contract FedMLContract {
 
     function getRoundRanking(uint _taskId, uint _round) validTask(_taskId) external view returns (uint[] memory) {
         Task storage task = taskList[_taskId];
-        require(_round < task.rounds.length); // available from round 1 until current round - 1 
+        require(_round < task.rounds.length); // available from round 1 until current round-1 
         return task.rounds[_round-1].ranking; // index adjustment
     }
 
@@ -387,7 +421,7 @@ contract FedMLContract {
 
     function getRoundWork(uint _taskId, uint _round) validTask(_taskId) external view returns (Commit[] memory) {
         Task storage task = taskList[_taskId];
-        require(_round < task.rounds.length); // available from round 1 until current round - 1 
+        require(_round < task.rounds.length); // available from round 1 until current round-1 
         return task.rounds[_round-1].committedWorks; // index adjustment
     }
 
