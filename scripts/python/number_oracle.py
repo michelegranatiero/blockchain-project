@@ -4,7 +4,7 @@ import random
 w3 = Web3(Web3.HTTPProvider('http://127.0.0.1:8545'))
 
 # Get contract abi
-f = open('./artifacts/contracts/EventsApp.sol/EventsApp.json')
+f = open('./artifacts/contracts/FedMLContract.sol/FedMLContract.json')
 data = json.load(f)
 abi = data['abi']
 f.close()
@@ -17,16 +17,17 @@ contract = w3.eth.contract(address=contract_address, abi=abi)
 event_filter = contract.events['NeedRandomness'].create_filter(fromBlock='latest')
 
 accounts = w3.eth.accounts
+#the oracle address and the task admin address are the same
 my_address = accounts[len(accounts) - 1]
 
-print('Oracle is ready to serve...\n')
+print('Number oracle is ready to serve...\n')
 try:
     while True:
         for event in event_filter.get_new_entries():
             # retrive specific task address from event (in smart contract: put address inside event)
-            rnd = [random.randint(0,event.args['upperBound'] - 1) for _ in range(event.args['numberOfSeeds'])]
+            rnd = random.randint(0,event.args['upperBound'] - 1)
             print(f"Sending randomness to Smart Contract at address: {contract_address}...")
             print(f"\nSelected randomness is: {rnd}")
-            contract.functions.setRandomness(rnd).transact({"from":my_address})
+            contract.functions.setRandomness(event.args['taskId'],rnd).transact({"from":my_address})
 except KeyboardInterrupt:
     print('Exiting oracle...')

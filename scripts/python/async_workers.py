@@ -5,11 +5,12 @@ import asyncio
 import ml_utils
 import requests
 import ipfshttpclient
+from utils import encode_CID_to_2_bytes_32, decode_2_bytes_32_to_CID
 
 ipfsclient = ipfshttpclient.connect()
 
 # Get contract abi
-f = open('./artifacts/contracts/EventsApp.sol/EventsApp.json')
+f = open('./artifacts/contracts/FedMLContract.sol/FedMLContract.json')
 data = json.load(f)
 abi = data['abi']
 f.close()
@@ -31,48 +32,52 @@ class worker:
         self.testdata = dataset[1]
 
     async def simulate(self):
-
-        tx_hash = self.contract.functions.register().transact({'from':self.address})
+        entrance_fee = self.contract.functions.getEntranceFee(0).call()
+        tx_hash = self.contract.functions.register(0).transact({'from':self.address, 'value':entrance_fee})
         receipt = w3.eth.wait_for_transaction_receipt(tx_hash)
         if receipt:
             print(f'{self.address[:10]} registered to the task!')
-            print(f'{self.address[:10]} listening to events...')
+            print(f'{self.address[:10]} listening for events...')
 
-            selection_event_filter = self.contract.events['Selected'].createFilter(fromBlock='latest')
             round_start_event_filter = self.contract.events['RoundStarted'].createFilter(fromBlock='latest')
-            
+            numberOfRounds = self.contract.functions.getNumberOfRounds(0).call()
 
             while not self.selected:
-                #listen for selection events
-                for event in selection_event_filter.get_new_entries():
-                    self.handle_selection_event(event)
-                for event in round_start_event_filter.get_new_entries():
-                    if self.selected:
-                        self.handle_round_start_event(event)
 
+                for event in round_start_event_filter.get_new_entries():
+                    round = event.args["roundNumber"]
+                    print(f"Worker {self.address[:10]} checks if selected for round {round}")
+                    self.selected = self.contract.functions.isWorkerSelected(0,self.address,round).call()
+                    if self.selected:
+                        self.round = round
+                        print(f"Worker at address {self.address[:10]} was selected for round {self.round}")
+                        if (round + 1 == numberOfRounds):
+                            self.
+                        self.handle_round_start_event(event)
                 await asyncio.sleep(1)
 
         print(f"Task ended, worker {self.address[:10]} exiting...")
         
 
-    #Handlers for SC events
-    def handle_selection_event(self, event):
-        if self.address in event.args['workers']:
-            self.selected = True
-            self.round = event.args['roundNumber']
-            print(f"Worker at address {self.address[:10]} was selected for round {self.round}")
-    
+    #Handlers for SC events  
     def handle_round_start_event(self, event):
-        if event.args['roundNumber'] == self.round:
-            previous_work = event.args['previousWork']
-            print(f"{self.address[:10]} start training...")
-            work, votes = self.train(previous_work, device, ipfsclient) #plug model training here. the work variable should contain the model CID
-            print(f"Previous work: {previous_work} current work: {work}")
-            print(f"Votes: {votes}")
-            print(f"Round number: {event.args['roundNumber']}\nWorker {self.address[:10]} submitting work...\n")
-            tx_hash = self.contract.functions.commitWork(work, votes).transact({"from":self.address})
-            w3.eth.wait_for_transaction_receipt(tx_hash)
-        
+        previous_work = []
+        if self.round != 0:
+            commits = self.contract.functions.getRoundWork(0, self.round-1).call()
+            previous_work = [decode_2_bytes_32_to_CID(commit[1],commit[2]) for commit in commits]
+        print(f"Round {self.round}:{self.address[:10]} start training...")
+        work, votes = self.train(previous_work, device, ipfsclient) #plug model training here. the work variable should contain the model CID
+        print(f"Votes: {votes}")
+        print(f"{self.address[:10]} submitting work...\n")
+        part1, part2 = encode_CID_to_2_bytes_32(work)
+        tx_hash = self.contract.functions.commitWork(0, part1, part2, votes).transact({"from":self.address})
+        w3.eth.wait_for_transaction_receipt(tx_hash)
+    
+    def handle_last_round_start_event(self, event):
+        commits = self.contract.functions.getRoundWork(0, self.round-1).call()
+        previous_work = [decode_2_bytes_32_to_CID(commit[1],commit[2]) for commit in commits]
+        votes = self.train(previous_work, device, ipfsclient)
+
     def handle_end_event(self, event):
         print("Task ended, exiting...")
 
@@ -103,13 +108,13 @@ class worker:
                     _, predicted = ml_utils.torch.max(output.data, 1)
                     total += target.size(0)
                     correct += (predicted == target).sum().item()
-                
-                accuracy = 100 * correct / total
-                votes[i] = int(accuracy*10)
 
                 if accuracy > best_accuracy:
                     best_state_dict = state_dict
             
+            if self.round == self.contract.functions.getNumberOfRounds(0).call(): #worker of the last round
+                return votes
+                        
             model.load_state_dict(best_state_dict)
         
         weightsPath = f'rounds/round{self.round}/cnn{self.address[:10]}.params'
@@ -154,8 +159,8 @@ class worker:
     
 async def main():
 
-    workersRequired = smartContract.functions.getRequiredWorkers().call()
-
+    task = smartContract.functions.getTask(0).call()
+    workersRequired = task[1]*task[2]
     dataLoader = ml_utils.getDataLoaders(workersRequired)
 
     w3 = Web3(Web3.HTTPProvider('http://127.0.0.1:8545'))

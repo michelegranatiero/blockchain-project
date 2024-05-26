@@ -19,13 +19,12 @@ contract FedMLContract {
     event Registered(uint taskId, address worker);
     event NewFunding(uint taskId, uint numFunders, uint updatedBalance, uint value);
     event StopFunding(uint taskId);
-    event NeedRandomness(uint taskId, uint numberOfSeeds, uint upperBound);
+    event NeedRandomness(uint taskId, uint upperBound);
     event RoundStarted(uint taskId, uint roundNumber);
     event TaskEnded(uint taskId);
-    //event Selected(uint taskId, address[] workers, uint roundNumber);
 
 
-    enum State {DEPLOYED, STARTED, COMPLETED}
+    enum State {DEPLOYED, STARTED, COMPLETED, ABORTED}
 
     //address oracle;
     //address owner;
@@ -40,17 +39,22 @@ contract FedMLContract {
         //address[] workers; // use the same reasoning of ranking, so store instead of an address an unit16 (?)
         uint[] ranking; // a smaller uint (?). A: workersPerRound is uint16, so uint256[] can become uint16[], A: surprisingly increases gas 
         Commit[] committedWorks;
+        uint totalScore;
     }
 
     struct Task {
         uint id; //32 bytes
         uint numberOfRounds;
         uint workersPerRound;
+        //added entranceFee for computing rewards
+        uint entranceFee;
         Commit model; //initial weights
         address admin; //20 bytes //the admin of the task is stored inside the struct of the model
         State state; //1 bytes
         bool fundingCompleted; // 1 bytes
+        //the following two arrays are synchronized
         address[] registeredWorkers;
+        bool[] hasPendingReward;
         Round[] rounds;
     }
  
@@ -58,6 +62,9 @@ contract FedMLContract {
 
     uint public taskCounter = 0;
     mapping (uint taskId => Task task) taskList;
+    mapping (address => uint) pendingRewards; //rewards assigned to workers
+
+
 
     function deployTask(
         bytes32 _hashPart1,
@@ -73,9 +80,10 @@ contract FedMLContract {
         task.model = Commit(msg.sender, _hashPart1, _hashPart2);
         task.numberOfRounds = _numberOfRounds;
         task.workersPerRound = _workersPerRound;
+        //task.entranceFee = _entranceFee; this needs to be computed after the task is deployed
         task.fundingCompleted; //by default initialized to false (saves gas)
         task.state = State.DEPLOYED;
-        emit Deployed(task.id);
+        emit Deployed(task.id); //this event needs to be catched by the oracle
     }
 
     modifier validTask(uint _taskId) {
@@ -85,10 +93,6 @@ contract FedMLContract {
     }
 
     // ------------------------------------------- GETTERS -------------------------------------------
-
-    /* function getAllTasks() external view returns (Task[] memory) {
-        return taskList;
-    } */
     
     function getTask(uint _taskId) validTask(_taskId) external view returns (Task memory) {
         return taskList[_taskId];
@@ -98,7 +102,7 @@ contract FedMLContract {
         return taskFundersMap[_taskId].keys();
     }
 
-    function getFundsAmount(uint _taskId) validTask(_taskId) external view returns (uint) {
+    function getFundsAmount(uint _taskId) validTask(_taskId) public view returns (uint) {
         uint totalFunds = 0;
         EnumerableMap.AddressToUintMap storage funderMap = taskFundersMap[_taskId]; 
         for (uint i = 0; i < funderMap.length(); i++) {
@@ -134,6 +138,7 @@ contract FedMLContract {
         else { //otherwise: New Funder
             funderMap.set(msg.sender, msg.value);
         }
+        console.log("User %s funded %d", msg.sender, msg.value);
         emit NewFunding(_taskId, funderMap.length(), msg.value, funderMap.get(msg.sender)); 
         //Do we need all of these parameters for the event?
     }
@@ -150,7 +155,7 @@ contract FedMLContract {
         // if the registering is completed
         // i.e. the number of registered workers matches with the number of required workers (workersPerRound * numberOfRounds)
         if (task.registeredWorkers.length == workersPerRound*numberOfRounds) { // taskList[_taskId].registeringCompleted // taskList[_taskId].workersRequired
-            emit NeedRandomness(_taskId, numberOfRounds, workersPerRound*10); //workersPerRound*10 (???)
+            emit NeedRandomness(_taskId, workersPerRound*10); //workersPerRound*10 (???)
         }
         emit StopFunding(_taskId);
     }
@@ -163,7 +168,7 @@ contract FedMLContract {
         return false;
     }
 
-    function register(uint _taskId) validTask(_taskId) external {
+    function register(uint _taskId) payable validTask(_taskId) external {
         Task storage task = taskList[_taskId];
         uint numRegWorkers = task.registeredWorkers.length; //caching
         uint workersPerRound = task.workersPerRound; //caching
@@ -172,12 +177,14 @@ contract FedMLContract {
         require(numRegWorkers < workersRequired, "Impossible to register!");
         //check if address is already registered
         require(!isAlreadyWorker(msg.sender, task.registeredWorkers));
+        console.log("Registered worker %d",numRegWorkers);
         task.registeredWorkers.push();
         task.registeredWorkers[numRegWorkers] = msg.sender; // no need to decrease by 1 because refers to the value before the push
-        if (numRegWorkers+1 == workersRequired) { // numRegWorkers refers to the value before the push, so the +1 it's because of the push above
-            // task.registeringCompleted = true; // can be removed, is equivalent to perform the check task.registeredWorkers.length == task.workersRequired)
+        if (numRegWorkers+1 == workersRequired) { // (task.registeredWorkers.length == workersRequired) numRegWorkers refers to the value before the push, so the +1 it's because of the push above
+            console.log("All workers registered!");
             if (task.fundingCompleted) {
-                emit NeedRandomness(_taskId, numberOfRounds, workersPerRound*10);
+                console.log("Requesting randomness...");
+                emit NeedRandomness(_taskId, workersPerRound*10);
             }
         }
         emit Registered(_taskId, msg.sender);
@@ -198,12 +205,19 @@ contract FedMLContract {
         startRound(_taskId);
     }
 
+    function setEntranceFee(uint _taskId, uint _fee) validTask(_taskId) external {
+        Task storage task = taskList[_taskId];
+        require(msg.sender == task.admin);
+        task.entranceFee = _fee;
+    }
+
     function shuffleWorkers(uint _taskId, uint _seed) internal {
         // Shuffle the registeredWorkers array
         // Since we know the current round and the number of workers per round then
         // we can refer to the corresponding portion of the array registeredWorkers for the single round 
         Task storage task = taskList[_taskId];        
         uint numOfRegWorkers = task.registeredWorkers.length; //number of registered workers to the task _taskId
+
         for (uint i = 0; i < numOfRegWorkers; i++) {
             uint rand = uint(keccak256(abi.encodePacked(_seed, i)));
             uint j = rand % numOfRegWorkers;
@@ -219,29 +233,20 @@ contract FedMLContract {
         task.rounds.push(); //task.rounds.length increments by 1        
         // Starting round number currentRound (where 0 <= currentRound <= numberOfRounds-1)
         console.log("Starting round number %s", currentRound);
-        //Start next round and give to the workers the work from the previous round
-        if (currentRound > 0) {
-            console.log("Sending previous works...");
-                //uint16 workersPerRound = task.workersPerRound;
-                // the loop maybe can be optimized (?)
-                //for (uint i = 0; i < task.workersPerRound; i++) {
-                    //console.log(task.rounds[currentRound-1].committedWorks[i]);
-                //}
-        }
+        //Start next round
         emit RoundStarted(_taskId, currentRound); //task.rounds[task.currentRound-1].committedWorks
         //}
     }
     
     //Checks if worker is selected for the current round
-    function isWorkerSelected(uint _taskId, address worker) validTask(_taskId) view public returns (bool) {
+    function isWorkerSelected(uint _taskId, address worker, uint _round) validTask(_taskId) view public returns (bool) {
         Task storage task = taskList[_taskId];
         require(task.rounds.length > 0); //at least one round has been started
-        uint currentRound = task.rounds.length-1;
         //check if the worker was selected, i.e. that it is in the proper portion of the array registeredWorkers after the shuffling
         bool selected = false;
         // the loop can be optimized, todo change it into a while loop
         uint workersPerRound = task.workersPerRound; //caching
-        for (uint i = currentRound*workersPerRound; i < workersPerRound*(currentRound+1); i++) {
+        for (uint i = _round*workersPerRound; i < workersPerRound*(_round+1); i++) {
             if(task.registeredWorkers[i] == worker) {
                 selected = true;
                 break;
@@ -265,42 +270,32 @@ contract FedMLContract {
         return committed;
     }
 
-    function commitWork(uint _taskId, bytes32 workPart1, bytes32 workPart2, uint[] calldata votes) validTask(_taskId) external {
+    function commit(uint _taskId, bytes32 workPart1, bytes32 workPart2, uint[] calldata votes) validTask(_taskId) external {
                 
         Task storage task = taskList[_taskId];
-        require(task.state == State.STARTED); //task not completed yet
-        require(isWorkerSelected(_taskId, msg.sender)); //the worker is selected for the current round
-        require(!hasCommitted(_taskId, msg.sender)); //the worker has not committed yet
+        require(task.state == State.STARTED, "Task not started!"); //task not completed yet
+        require(isWorkerSelected(_taskId, msg.sender, task.rounds.length -1), "You are not selected!"); //the worker is selected for the current round, could prevent registering!
+        require(!hasCommitted(_taskId, msg.sender), "You have already committed!"); //the worker has not committed yet
         uint currentRound = task.rounds.length-1;
 
         if (currentRound > 0) {
-            require(votes.length == task.workersPerRound); //the number of submitted votes should be the same of the submitted works in the previous round (i.e. to the number of workers per round)
-            // votes should be all diff (since is a ranking) ???
-            //require(allDiff(votes));
-
-            //If it is not the first round then update the ranking of the previous round
-            // update previous round ranking
-            //updatePreviousRoundRanking(_taskId, votes);
-            //the i-th worker of the previous round receives votes[i] attestations (points?)
+            require(votes.length == task.workersPerRound); 
             for (uint i = 0; i < votes.length; i++) {
                 task.rounds[currentRound-1].ranking[i] += votes[i]; // assign or increase and assign?
+                task.rounds[currentRound-1].totalScore += votes[i];
             }
         }
 
         Commit memory work;
         work.committer = msg.sender;
         task.rounds[currentRound].ranking.push();
+        //check this check
         if (currentRound < task.workersPerRound) {
             work.hashPart1 = workPart1;
             work.hashPart2 = workPart2;
         }
         task.rounds[currentRound].committedWorks.push(work);
-
-        //task.rounds[currentRound].workers.push();
-        //task.rounds[currentRound].committedWorks.push();
-        //task.rounds[currentRound].committedWorks.push();
-        //task.rounds[currentRound].workers[commitCount] = msg.sender;
-        
+  
         //If it was the last commitment for the current round, end the round
         //uint commitCount = task.rounds[currentRound].committedWorks.length;
         if (task.rounds[currentRound].committedWorks.length == task.workersPerRound) {
@@ -314,45 +309,68 @@ contract FedMLContract {
                 //assign rewards
                 task.state = State.COMPLETED;
                 emit TaskEnded(_taskId);
-            }
-            else {
+            }            
                 startRound(_taskId);
             }
         }
     }
 
-    // EMBEDDED INTO commitWork()
-    // function updatePreviousRoundRanking(uint _taskId, uint256[] memory votes) internal {
-    //function updatePreviousRoundRanking(uint _taskId, uint256[] calldata votes) internal {
-    //    Task storage task = taskList[_taskId]; //caching
-    //    uint currentRound = task.rounds.length-1;
-        //the i-th worker of the previous round receives votes[i] attestations (points?)
-    //    for (uint16 i = 0; i < votes.length; i++) {
-    //        task.rounds[currentRound-1].ranking[i] += votes[i]; //task.currentRound
-    //    }
-    //}
+    function lastRoundCommit(uint _taskId, uint[] calldata votes) validTask(_taskId) external {
+        Task storage task = taskList[_taskId];
+        require(task.state == State.STARTED, "Task not started!"); //task not completed yet
+        require(isWorkerSelected(_taskId, msg.sender, task.rounds.length -1), "You are not selected!"); //the worker is selected for the current round, could prevent registering!
+        require(!hasCommitted(_taskId, msg.sender), "You have already committed!");
+    
+        for (uint i = 0; i < votes.length; i++) {
+                task.rounds[currentRound-1].ranking[i] += votes[i]; // assign or increase and assign?
+                task.rounds[currentRound-1].totalScore += votes[i];
+            }
+    }
 
-    //function endRound(uint _taskId) internal {
-    //    Task storage task = taskList[_taskId]; //caching
-    //    uint currentRound = task.rounds.length; // -1 (?)
-        // if the current round is the last one then terminate the task
-    //    if (currentRound == task.numberOfRounds) { 
-            // END TASK
-            //assign rewards
-    //        taskList[_taskId].state = State.COMPLETED;
-    //        emit TaskEnded(_taskId);
-    //    }
-    //    else {
-    //        startRound(_taskId);
-    //    }
-    //}
+    function withdrawReward() external payable {
+        Task storage task  = taskList[_taskId];
+        uint workerIndex;
+        for (uint i = 0; i < task.registeredWorkers.length; i++) {
+            if (task.registeredWorkers[i] == msg.sender) {
+                workerIndex = i;
+                break;
+            }
+        }
+        require(task.hasPendingReward[workerIndex], "No reward to be withdrawn");
+        task.hasPendingRewards[workerIndex] = false;
 
-    // EMBEDDED INTO endRound()
-    //function endTask(uint _taskId) internal {
-        //assign rewards
-    //    taskList[_taskId].state = State.COMPLETED;
-    //    emit TaskEnded(_taskId);
-    //}
+        payable(msg.sender).transfer(amount);
+    }
+
+
+    function computeRewards(uint _taskId, uint _round) public returns (uint) {
+        
+        Task storage task  = taskList[_taskId];
+        Round storage round = task.rounds[_round];
+        
+
+        uint fundedAmount = getFundsAmount(_taskId);
+
+        
+
+        uint roundBounty = fundedAmount / task.numberOfRounds;
+        uint totalScore = round.totalScore;
+
+        console.log("Round bounty is: %s", roundBounty);
+        console.log("Total score for round %s is: %s", _round, totalScore);
+        //for each worker compute the coefficient and assign the reward
+        for (uint j = 0; j < task.workersPerRound; j++) {
+            address worker = round.committedWorks[j].committer;
+            uint coefficient = (round.ranking[j] * 1000) / totalScore;
+            uint reward = task.entranceFee + (roundBounty * coefficient)/1000;
+            
+            pendingRewards[worker] += reward;
+            console.log("Worker %s at round %s got reward %s", worker, _round, reward);
+        }
+
+
+
+    }
 
     function getRanking(uint _taskId) validTask(_taskId) external view returns (uint[][] memory) {
         Task storage task = taskList[_taskId];
@@ -368,21 +386,21 @@ contract FedMLContract {
         return ranking;
     }
 
-    // this fetches the work of the workers for ALL THE ROUNDS, to fix
-    /* function getWork(uint _taskId) validTask(_taskId) external view returns (Commit[][] memory) {
-        Task storage task = taskList[_taskId];
-        uint numOfRounds = task.numberOfRounds; // fix this, numberOfRounds is the total
-        Commit[][] memory commits = new Commit[][](numOfRounds);
-        for (uint i = 0; i < numOfRounds; i++) {
-            commits[i] = task.rounds[i].committedWorks;
-        }
-        return commits; // now it contains the worker, the first part of the hash and the sencond part of the hash
-    } */
+    function getRewards(uint _taskId) validTask(_taskId) external view returns (uint) {
+        return pendingRewards[msg.sender];
+    }
 
     function getRoundWork(uint _taskId, uint _round) validTask(_taskId) external view returns (Commit[] memory) {
         Task storage task = taskList[_taskId];
         require(_round < task.rounds.length); // available from round 1 until current round - 1 
-        return task.rounds[_round-1].committedWorks; // index adjustment
+        return task.rounds[_round].committedWorks; // index adjustment
     }
 
+    function getEntranceFee(uint _taskId) validTask(_taskId) external view returns (uint) {
+        return taskList[_taskId].entranceFee;
+    }
+
+    function getNumberOfRounds(uint _taskId) validTask(_taskId) external view returns (uint) {
+        return taskList[_taskId].numberOfRounds;
+    }
 }
