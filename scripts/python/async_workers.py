@@ -46,14 +46,14 @@ class worker:
 
                 for event in round_start_event_filter.get_new_entries():
                     round = event.args["roundNumber"]
-                    print(f"Worker {self.address[:10]} checks if selected for round {round}")
-                    self.selected = self.contract.functions.isWorkerSelected(0,self.address,round).call()
+                    self.selected = self.contract.functions.isWorkerSelected(0,self.address,round).call({'from':self.address})
                     if self.selected:
                         self.round = round
                         print(f"Worker at address {self.address[:10]} was selected for round {self.round}")
                         if (round + 1 == numberOfRounds):
-                            self.
-                        self.handle_round_start_event(event)
+                            self.handle_last_round_start_event(event)
+                        else:
+                            self.handle_round_start_event(event)
                 await asyncio.sleep(1)
 
         print(f"Task ended, worker {self.address[:10]} exiting...")
@@ -63,20 +63,23 @@ class worker:
     def handle_round_start_event(self, event):
         previous_work = []
         if self.round != 0:
-            commits = self.contract.functions.getRoundWork(0, self.round-1).call()
+            commits = self.contract.functions.getRoundWork(0, self.round-1).call({'from':self.address})
             previous_work = [decode_2_bytes_32_to_CID(commit[1],commit[2]) for commit in commits]
+            print(f"Previous work: {previous_work}")
         print(f"Round {self.round}:{self.address[:10]} start training...")
         work, votes = self.train(previous_work, device, ipfsclient) #plug model training here. the work variable should contain the model CID
         print(f"Votes: {votes}")
         print(f"{self.address[:10]} submitting work...\n")
         part1, part2 = encode_CID_to_2_bytes_32(work)
-        tx_hash = self.contract.functions.commitWork(0, part1, part2, votes).transact({"from":self.address})
+        tx_hash = self.contract.functions.commit(0, part1, part2, votes).transact({"from":self.address})
         w3.eth.wait_for_transaction_receipt(tx_hash)
     
     def handle_last_round_start_event(self, event):
         commits = self.contract.functions.getRoundWork(0, self.round-1).call()
         previous_work = [decode_2_bytes_32_to_CID(commit[1],commit[2]) for commit in commits]
         votes = self.train(previous_work, device, ipfsclient)
+        tx_hash = self.contract.functions.lastRoundCommit(0, votes).transact({"from":self.address})
+        w3.eth.wait_for_transaction_receipt(tx_hash)
 
     def handle_end_event(self, event):
         print("Task ended, exiting...")
@@ -108,11 +111,13 @@ class worker:
                     _, predicted = ml_utils.torch.max(output.data, 1)
                     total += target.size(0)
                     correct += (predicted == target).sum().item()
-
+                accuracy = 100 * correct / total
+                votes[i] = int(accuracy * 10)
+                
                 if accuracy > best_accuracy:
                     best_state_dict = state_dict
-            
-            if self.round == self.contract.functions.getNumberOfRounds(0).call(): #worker of the last round
+            print("Check if worker is in the last round")
+            if self.round + 1 == self.contract.functions.getNumberOfRounds(0).call() : #worker of the last round
                 return votes
                         
             model.load_state_dict(best_state_dict)
@@ -168,7 +173,12 @@ async def main():
     workers = [worker(address, smartContract, dataLoader[i]) for i,address in enumerate(accounts[:workersRequired])]
     print(f"Activating {len(workers)} workers...")
     try:
-        await asyncio.gather(*[w.simulate() for w in workers], return_exceptions=True)
+        result = await asyncio.gather(*[w.simulate() for w in workers], return_exceptions=True)
+        for i, result in enumerate(result):
+            if isinstance(result, Exception):
+                print(f"Worker {i} raised an exception: {result}")
+            else:
+                print(f"Worker {i} completed successfully with result: {result}")
     except Exception as e:
         print(e.args)
 

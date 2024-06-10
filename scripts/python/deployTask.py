@@ -19,7 +19,7 @@ my_address = accounts[-1]
 cid = 'QmPP8kQvfs7fbg6kTjfUdJ4rvLiRbLXGzgcHNBQAPPGtNv'
 part1, part2 = utils.encode_CID_to_2_bytes_32(cid)
 
-tx_hash = contract.functions.deployTask(part1, part2, 5, 5).transact({"from":my_address})
+tx_hash = contract.functions.deployTask(part1, part2, 3, 3).transact({"from":my_address})
 receipt = w3.eth.wait_for_transaction_receipt(tx_hash)
 
 
