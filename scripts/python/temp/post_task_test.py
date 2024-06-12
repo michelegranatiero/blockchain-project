@@ -11,13 +11,13 @@ w3 = Web3(Web3.HTTPProvider('http://127.0.0.1:8545'))
 contract_address = Web3.to_checksum_address('0x5fbdb2315678afecb367f032d93f642f64180aa3')
 contract = w3.eth.contract(address=contract_address, abi=abi)
 
-address1 = Web3.to_checksum_address('0x9965507d1a55bcc2695c58ba16fb37d819b0a4dc')
+address1 = Web3.to_checksum_address('0x976ea74026e726554db657fa54763abd0c3a0aa9')
 address2 = w3.eth.accounts[-10]
 
 balance = w3.eth.get_balance(address1)
 
 print(f"{address1[:10]}: {balance}")
-contract.functions.withdrawReward(0,1).transact({'from':address1})
+contract.functions.withdrawReward(0,2).transact({'from':address1})
 new_balance = w3.eth.get_balance(address1)
 print(f"Reward: {new_balance - balance}")
 print(f"{address1[:10]}: {new_balance}")

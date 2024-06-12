@@ -46,7 +46,7 @@ commit_gas_estimate = w3.eth.estimate_gas(commitTx)
 commit_cost = commit_gas_estimate * gas_price """
 
 entrance_fee = register_cost * 30
-funding = entrance_fee * 10
+funding = entrance_fee * 10000
 
 
 #set the fee and fund the task

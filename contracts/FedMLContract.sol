@@ -219,6 +219,12 @@ contract FedMLContract {
             task.metadata.registeredWorkers[j] = task.metadata.registeredWorkers[i];
             task.metadata.registeredWorkers[i] = worker;
         }
+
+        //display the new order of the workers
+        for (uint i = 0; i < numOfRegWorkers; i++) {
+            console.log("Worker %s is at position %s", task.metadata.registeredWorkers[i], i);
+        }
+
     }
  
     function startRound(uint _taskId) internal {
@@ -311,6 +317,12 @@ contract FedMLContract {
 
         //set the sender eligible for rewards
         EnumerableSet.add(task.pendingRewards, msg.sender);
+        
+        console.log("Votes received from worker %s", msg.sender);
+        //print the votes received
+        for (uint i = 0; i < votes.length; i++) {
+            console.log("Vote %s: %s", i, votes[i]);
+        }
 
         //update the previous round ranking based on the votes sent
         for (uint i = 0; i < votes.length; i++) {
@@ -318,15 +330,19 @@ contract FedMLContract {
             task.metadata.rounds[currentRound-1].totalScore += votes[i];
         }
 
+        console.log("Saving the work...");
         Commit memory work;
         work.committer = msg.sender;
         work.votes = votes;
         task.metadata.rounds[currentRound].committedWorks.push(work);
         
+        console.log("Updating the last round mean ranking...");
         //update the last round mean ranking as a running average
         for (uint i = 0; i < votes.length; i++) {
-            task.lastRoundMeanRanking[i] = task.lastRoundMeanRanking[i] + 
-            (votes[i] - task.lastRoundMeanRanking[i])/(task.metadata.rounds[currentRound].committedWorks.length);
+            console.log("Vote: %s", votes[i]);
+            console.log("Last round mean ranking: %s", task.lastRoundMeanRanking[i]);
+            task.lastRoundMeanRanking[i] = uint(int256(task.lastRoundMeanRanking[i]) + 
+            int256(int256(votes[i]) - int256(task.lastRoundMeanRanking[i]))/int256(task.metadata.rounds[currentRound].committedWorks.length));
         }
 
         //If it was the last commitment for the round emit the event LastRoundCommittmentEnded
@@ -338,7 +354,7 @@ contract FedMLContract {
 
     function computeLastRoundScore(uint _taskId) validTask(_taskId) external {
         Task storage task = taskList[_taskId];
-
+        require(isWorkerSelected(_taskId, msg.sender, task.metadata.numberOfRounds - 1), "You are not selected for this round!");
         //compute the sender's score as the inverse of the sum of the distances between the sender's votes and the mean ranking of the last round
         //retrieve the sender's votes
         uint[] memory senderVotes;
@@ -375,14 +391,13 @@ contract FedMLContract {
         require(EnumerableSet.contains(task.pendingRewards, msg.sender), "No reward to be withdrawn");
         EnumerableSet.remove(task.pendingRewards, msg.sender);
         
+        uint reward;
         if (_round == task.metadata.numberOfRounds-1) {
-            uint amount = computeLastRoundReward(_taskId, _round);
-            payable(msg.sender).transfer(amount);
-            return;
+            reward = computeLastRoundReward(_taskId, _round);
         } else {
-            uint amount = computeReward(_taskId, _round);
-            payable(msg.sender).transfer(amount);
+            reward = computeReward(_taskId, _round);
         }
+        payable(msg.sender).transfer(reward);
     }
 
     function computeReward(uint _taskId, uint _round) internal view returns (uint) {
@@ -405,7 +420,7 @@ contract FedMLContract {
             }
         }
         uint coefficient = (round.scoreboard[workerIndex]) / totalScore;
-        uint reward = task.metadata.entranceFee + (roundBounty * coefficient)/1000;
+        uint reward = task.metadata.entranceFee + (roundBounty * coefficient)/100000;
         
         console.log("Worker %s at round %s got reward %s", msg.sender, _round, reward);
 
@@ -422,7 +437,7 @@ contract FedMLContract {
         
         uint workerScore = task.lastRoundScores[msg.sender];
         uint coefficient = workerScore / round.totalScore;
-        uint reward = task.metadata.entranceFee + (roundBounty * coefficient)/1000;
+        uint reward = task.metadata.entranceFee + (roundBounty * coefficient);//1000;
 
         console.log("Worker %s at round %s got reward %s", msg.sender, _round, reward);        
 

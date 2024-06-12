@@ -31,4 +31,4 @@ start python .\scripts\python\deployTask.py
 echo DONE
 
 echo Running the workers...
-start python .\scripts\python\async_workers.py
+start cmd /k python .\scripts\python\async_workers.py

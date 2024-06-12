@@ -51,7 +51,7 @@ class worker:
                         self.round = round
                         print(f"Worker at address {self.address[:10]} was selected for round {self.round}")
                         if (round + 1 == numberOfRounds):
-                            self.handle_last_round_start_event(event)
+                            await self.handle_last_round_start_event(event)
                         else:
                             self.handle_round_start_event(event)
                 await asyncio.sleep(1)
@@ -74,12 +74,23 @@ class worker:
         tx_hash = self.contract.functions.commit(0, part1, part2, votes).transact({"from":self.address})
         w3.eth.wait_for_transaction_receipt(tx_hash)
     
-    def handle_last_round_start_event(self, event):
+    async def handle_last_round_start_event(self, event):
         commits = self.contract.functions.getRoundWork(0, self.round-1).call()
         previous_work = [decode_2_bytes_32_to_CID(commit[1],commit[2]) for commit in commits]
         votes = self.train(previous_work, device, ipfsclient)
         tx_hash = self.contract.functions.lastRoundCommit(0, votes).transact({"from":self.address})
         w3.eth.wait_for_transaction_receipt(tx_hash)
+
+        commit_ended_event = self.contract.events['LastRoundCommittmentEnded'].createFilter(fromBlock='latest')
+        done = False
+        while not done:
+            for event in commit_ended_event.get_new_entries():
+                done = True
+                print(f"Worker {self.address[:10]} computing last round score...")
+                tx_hash = self.contract.functions.computeLastRoundScore(0).transact({"from":self.address})
+                w3.eth.wait_for_transaction_receipt(tx_hash)
+            await asyncio.sleep(1)
+
 
     def handle_end_event(self, event):
         print("Task ended, exiting...")
