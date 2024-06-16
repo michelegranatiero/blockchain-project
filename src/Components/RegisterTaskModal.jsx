@@ -15,7 +15,7 @@ import { Loader2 } from "lucide-react"
 
 
 
-function RegisterTaskModal({ className = "", disabledState = false, taskId, forceUpdate}) {
+function RegisterTaskModal({ className = "", disabledState = false, taskId, entranceFee, forceUpdate}) {
 
   const {wallet, register} = useWeb3();
 
@@ -24,7 +24,7 @@ function RegisterTaskModal({ className = "", disabledState = false, taskId, forc
 
   async function onRegister(){
     setloadingBtn(true);
-    const res = await register(taskId);
+    const res = await register(taskId, entranceFee);
     if (res) {
       setOpen(false);
       alert("Registered successfully");

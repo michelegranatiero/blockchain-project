@@ -15,7 +15,7 @@ import  { formatAddress, formatState, capitalizeFirstChar } from '@/utils/format
 import TaskButtons from "@/Components/TaskButtons";
 
 function Task() {
-  const { wallet, contract, getTask, setTaskEvents} = useWeb3();
+  const { wallet, contract, getTask, setTaskEvents, getContractBalance} = useWeb3();
 
   const { id } = useParams();
 
@@ -25,13 +25,19 @@ function Task() {
 
   const [forceUpdate, setForceUpdate] = useState(0);
 
+  const [contractBalance, setContractBalance] = useState(0);
+
   useEffect(() => {
     async function fetchTask() {
       let tsk = await getTask(id, true);
       if (tsk) setTask(tsk);
+      let balance = await getContractBalance();
+      if (balance) setContractBalance(balance);
       setLoading(false);
     }
-    if (contract) fetchTask();
+    if (contract){
+      fetchTask();
+    }
     else {
       const timeout = setTimeout(() => {
         if (!contract && loading) setLoading(false);
@@ -75,6 +81,8 @@ function Task() {
           <hr />
           <CardDescription>{task.description}</CardDescription>
           <hr />
+          <p>Entrance fee (wei): {Number(task.entranceFee)}</p>
+          <p>Contract balance (wei): {contractBalance}</p>
           <p>Funds (wei): {Number(task.funds)}</p>
           <p># Funders: {String(task.funders.length)}</p>
           <p>Admin Address: {formatAddress(String(task.admin))}</p>

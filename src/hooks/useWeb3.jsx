@@ -67,6 +67,12 @@ export const Web3ContextProvider = ({children}) => {
       setUpdate((k) => k + 1);
     });
 
+    const LastRoundCommittmentEndedEmitter = contract.events.LastRoundCommittmentEnded();
+    LastRoundCommittmentEndedEmitter.on('data', (eventData) => {
+      console.log("Event data: ", eventData);
+      setUpdate((k) => k + 1);
+    });
+
     const taskEndedEmitter = contract.events.TaskEnded();
     taskEndedEmitter.on('data', (eventData) => {
       console.log("Event data: ", eventData);
@@ -80,6 +86,7 @@ export const Web3ContextProvider = ({children}) => {
       stopFundingEmitter.removeAllListeners();
       needRandomnessEmitter.removeAllListeners();
       roundStartedEmitter.removeAllListeners();
+      LastRoundCommittmentEndedEmitter.removeAllListeners();
       taskEndedEmitter.removeAllListeners();
     }
 
@@ -124,23 +131,30 @@ export const Web3ContextProvider = ({children}) => {
       setUpdate((k) => k + 1);
     });
 
-    // trycatch TO BE REMOVED, just for debugging
+    
     const needRandomnessEmitter = contract.events.NeedRandomness({ filter: { taskId: taskId } });
     needRandomnessEmitter.on('data', (eventData) => {
       console.log("Event data: ", eventData);
       const data = eventData.returnValues;
-      try {
+      // trycatch TO BE REMOVED, just for debugging
+      /* try {
         const randomness = contract.methods.setRandomness(data.taskId, 1234).send({ from: wallet.accounts[0] }); //seed 1234
         console.log("Randomness set: ", randomness);
       } catch (error) {
         console.log("error setting randomness: ", error);
-      }
+      } */
 
       setUpdate((k) => k + 1);
     });
 
     const roundStartedEmitter = contract.events.RoundStarted({ filter: { taskId: taskId } });
     roundStartedEmitter.on('data', (eventData) => {
+      console.log("Event data: ", eventData);
+      setUpdate((k) => k + 1);
+    });
+
+    const LastRoundCommittmentEndedEmitter = contract.events.LastRoundCommittmentEnded({ filter: { taskId: taskId } });
+    LastRoundCommittmentEndedEmitter.on('data', (eventData) => {
       console.log("Event data: ", eventData);
       setUpdate((k) => k + 1);
     });
@@ -158,6 +172,7 @@ export const Web3ContextProvider = ({children}) => {
       stopFundingEmitter.removeAllListeners();
       needRandomnessEmitter.removeAllListeners();
       roundStartedEmitter.removeAllListeners();
+      LastRoundCommittmentEndedEmitter.removeAllListeners();
       taskEndedEmitter.removeAllListeners();
     }
   
@@ -166,7 +181,7 @@ export const Web3ContextProvider = ({children}) => {
   
 
 
-  const createTask = async (title, descr, numRounds, workersPerRound, file) => {
+  const createTask = async (title, descr, numRounds, workersPerRound, entranceFee, file) => {
     if (!contract) {
       console.error("Contract instance is not available.");
       return false;
@@ -189,19 +204,22 @@ export const Web3ContextProvider = ({children}) => {
 
       // encode CID to 2 bytes32
       const [part1, part2] = encodeCIDto2Bytes32(ipfsCID);
-
+      
       // deploy task
-      const receipt = await contract.methods  // remove await if you want to use events below
-        .deployTask(part1, part2, numRounds, workersPerRound)
+      const receipt = await contract.methods
+        .deployTask(part1, part2, numRounds, workersPerRound, entranceFee)
         .send({from: wallet.accounts[0]});
       console.log("Transaction receipt: ", receipt);
 
-      /* receipt.on('transactionHash', (hash) => {console.log(hash)});
-      receipt.on('receipt', (receipt) => {console.log(receipt)});
-      receipt.on('confirmation', (confirmationNumber, receipt) => {console.log(confirmationNumber, receipt)});
-      receipt.on('error', (error, receipt) => {console.log(error, receipt)}); */
+      /* //estimate entrance fee based on current gas price
+      const gasPrice = await web3.eth.getGasPrice();
+      //gas estimation for register function
+      const taskId = receipt.events.Deployed.returnValues.taskId;      
+      const gasEstimate = await contract.methods.register(taskId).estimateGas({ from: wallet.accounts[0] });
+      const entranceFeeEst = gasEstimate * gasPrice;
+      //set entrance fee
+      await contract.methods.setEntranceFee(taskId, entranceFeeEst).send({ from: wallet.accounts[0] }); */
 
-      //console.log(receipt.events.Deployed.returnValues.taskAddress)
       return true;
     } catch (error) {
       console.error("Error registering: ", error);
@@ -228,7 +246,7 @@ export const Web3ContextProvider = ({children}) => {
         task.amAdmin = roles.isAdmin;
         // check if task started
         
-        if (formatState(task.state) == "started") {
+        if (formatState(task.state) == "started" || formatState(task.state) == "completed"){
           task.hasCommitted = task.rounds.length > 0 ? await hasCommitted(task.id, wallet.accounts[0]) : true;
           task.isWorkerSelected = task.rounds.length > 0 ? await isWorkerSelected(task.id, wallet.accounts[0], task.rounds.length-1) : false;
           // selected round for the user (worker)
@@ -236,18 +254,16 @@ export const Web3ContextProvider = ({children}) => {
             (elem)=> elem == wallet.accounts[0]) / Number(task.workersPerRound))+1 : false;
           
           if ( task.isWorkerSelected && task.rounds[Number(task.numberOfRounds)-1]?.committedWorks.length == task.workersPerRound){
-            //worker last round score                      
-            console.log(wallet.accounts[0]);
-            
             task.hasLRScore = await contract.methods.hasLRScore(task.id, wallet.accounts[0]).call();
-            console.log(task.hasLRScore);
-             
+          }
+          if (task.amWorker && (task.workerRound == task.numberOfRounds && formatState(task.state) == "completed"
+            || task.rounds[task.workerRound]?.committedWorks.length == task.workersPerRound)
+          ){
+            task.hasWithdrawn = await contract.methods.hasWithdrawn(task.id).call({ from: wallet.accounts[0] });
           }
         }
 
-        if  (formatState(task.state) == "completed" && task.amWorker){
-          task.hasWithdrawn = await contract.methods.hasWithdrawn(task.id).call({ from: wallet.accounts[0] });
-        }
+        
 
         
       }
@@ -373,13 +389,13 @@ export const Web3ContextProvider = ({children}) => {
   }
 
 
-  const register = async (taskId) => {
+  const register = async (taskId, entranceFee) => {
     if (!contract) {
       console.error("Contract instance is not available.");
       return;
     }
     try {
-      const receipt = await contract.methods.register(taskId).send({ from: wallet.accounts[0] });
+      const receipt = await contract.methods.register(taskId).send({ from: wallet.accounts[0], value: entranceFee});
       console.log("Transaction receipt:", receipt);
       return true;
     } catch (error) {
@@ -539,8 +555,6 @@ export const Web3ContextProvider = ({children}) => {
     }
   }
 
-  
-  //////////////////////////////////////////////////
 
   const computeLastRoundScore = async (taskId) => {
     if (!contract) {
@@ -556,19 +570,31 @@ export const Web3ContextProvider = ({children}) => {
   }
 
 
-  const withdrawReward = async (taskId, round) => {
+  const withdrawReward = async (taskId) => {
     if (!contract) {
       console.error("Contract instance is not available.");
       return;
     }
     try {
-      const res = await contract.methods.withdrawReward(taskId, round).send({ from: wallet.accounts[0] });
+      const res = await contract.methods.withdrawReward(taskId).send({ from: wallet.accounts[0] });
       return res
     } catch (error) {
       console.error("Error withdrawing reward: ", error);
     }
   }
 
+  const getContractBalance = async () => {
+    if (!contract) {
+      console.error("Contract instance is not available.");
+      return;
+    }
+    try {
+      const balance = await web3.eth.getBalance(contractAddress);      
+      return Number(balance)
+    } catch (error) {
+      console.error("Error getting contract balance: ", error);
+    }
+  }
 
   const [filters, setFilters] = useState(["deployed", "started", "completed"]); // global tasks filters
 
@@ -594,6 +620,7 @@ export const Web3ContextProvider = ({children}) => {
         getRoundWork,
         computeLastRoundScore,
         withdrawReward,
+        getContractBalance,
         // ipfsFunctions
         fetchFromIPFS,
         downloadFile,

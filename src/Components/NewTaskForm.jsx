@@ -29,6 +29,7 @@ const taskSchema = z.object({
   descr: z.coerce.string().min(2).max(1000),
   numRounds: z.coerce.number().min(2).max(1000),
   workersPerRound: z.coerce.number().min(2).max(10000),
+  entranceFee: z.coerce.number().min(1),
   file: z.instanceof(FileList).refine((file) => {
     if (file.length == 0 || !file) return false;
     return true;
@@ -48,6 +49,7 @@ function NewTaskForm({setOpenState, forceUpdate}) {
       descr: "",
       numRounds: "",
       workersPerRound: "",
+      entranceFee: "",
     },
   });
 
@@ -59,7 +61,7 @@ function NewTaskForm({setOpenState, forceUpdate}) {
 
     setloadingBtn(true);
     
-    const response = await createTask(values.title, values.descr, values.numRounds, values.workersPerRound, values.file[0]);
+    const response = await createTask(values.title, values.descr, values.numRounds, values.workersPerRound, values.entranceFee, values.file[0]);
     if (response){
       setOpenState(false);
       alert("Task created successfully");
@@ -97,6 +99,13 @@ function NewTaskForm({setOpenState, forceUpdate}) {
       type: "number",
       placeholder: "4",
     },
+    {
+      name: "entranceFee",
+      label: "Entrance Fee (wei)",
+      type: "number",
+      placeholder: "1",
+    },
+
   ]
 
   return (

@@ -15,7 +15,7 @@ import { Loader2 } from "lucide-react"
 
 
 
-function WithdrawRewardButton({ className = "", disabledState = false, taskId, workerRound, forceUpdate}) {
+function WithdrawRewardButton({ className = "", disabledState = false, taskId, forceUpdate}) {
 
   const {wallet, withdrawReward} = useWeb3();
 
@@ -24,7 +24,7 @@ function WithdrawRewardButton({ className = "", disabledState = false, taskId, w
 
   async function onSubmit(){
     setloadingBtn(true);
-    const res = await withdrawReward(taskId, workerRound);
+    const res = await withdrawReward(taskId);
     if (res) {
       setOpen(false);
       alert("Transaction successful");
