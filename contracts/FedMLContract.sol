@@ -438,13 +438,11 @@ contract FedMLContract {
 
     }
 
-
     function hasWithdrawn(uint _taskId) validTask(_taskId) public view returns (bool) {
         require(taskList[_taskId].metadata.state == State.COMPLETED, "Task not completed!"); ///////////////////
         require(isAlreadyWorker(msg.sender, taskList[_taskId].metadata.registeredWorkers), "You are not registered for this task!");
         return !EnumerableSet.contains(taskList[_taskId].pendingRewards, msg.sender);
     }
-
 
     function withdrawReward(uint _taskId, uint _round) external payable {
         Task storage task  = taskList[_taskId];
