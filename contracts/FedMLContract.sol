@@ -365,14 +365,14 @@ contract FedMLContract {
             }
         }
 
-        //compute the score
+        //sum of the distances between the sender's votes and the mean ranking of the last round
         uint score;
         for (uint i = 0; i < senderVotes.length; i++) {
             score += abs(int(senderVotes[i]) - int(task.lastRoundMeanRanking[i]));
         }
 
         //save the sender score in the last round ranking
-        task.lastRoundScores[msg.sender] = 100000/score;
+        task.lastRoundScores[msg.sender] = 100000/(1+score);
 
         //update the last round total score
         task.metadata.rounds[task.metadata.numberOfRounds - 1].totalScore += task.lastRoundScores[msg.sender];
@@ -419,7 +419,9 @@ contract FedMLContract {
                 break;
             }
         }
-        uint coefficient = (round.scoreboard[workerIndex]) / totalScore;
+        uint coefficient = (round.scoreboard[workerIndex]) * 100000 / totalScore;
+        //log the coegfficient
+        console.log("Coefficient for worker %s at round %s is: %s", msg.sender, _round, coefficient);
         uint reward = task.metadata.entranceFee + (roundBounty * coefficient)/100000;
         
         console.log("Worker %s at round %s got reward %s", msg.sender, _round, reward);
@@ -436,8 +438,10 @@ contract FedMLContract {
         uint roundBounty = fundedAmount / task.metadata.numberOfRounds;
         
         uint workerScore = task.lastRoundScores[msg.sender];
-        uint coefficient = workerScore / round.totalScore;
-        uint reward = task.metadata.entranceFee + (roundBounty * coefficient);//1000;
+        uint coefficient = workerScore * 100000 / round.totalScore;
+        //log the coegfficient
+        console.log("Coefficient for worker %s at round %s is: %s", msg.sender, _round, coefficient);
+        uint reward = task.metadata.entranceFee + (roundBounty * coefficient)/100000;
 
         console.log("Worker %s at round %s got reward %s", msg.sender, _round, reward);        
 

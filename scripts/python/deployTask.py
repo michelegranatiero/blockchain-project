@@ -19,7 +19,10 @@ my_address = accounts[-1]
 cid = 'QmPP8kQvfs7fbg6kTjfUdJ4rvLiRbLXGzgcHNBQAPPGtNv'
 part1, part2 = utils.encode_CID_to_2_bytes_32(cid)
 
-tx_hash = contract.functions.deployTask(part1, part2, 3, 3).transact({"from":my_address})
+rounds = 2
+workersPerRound = 2
+
+tx_hash = contract.functions.deployTask(part1, part2, rounds, workersPerRound).transact({"from":my_address})
 receipt = w3.eth.wait_for_transaction_receipt(tx_hash)
 
 
@@ -34,6 +37,8 @@ registerTx = contract.functions.register(0).buildTransaction({
 register_gas_estimate = w3.eth.estimate_gas(registerTx)
 register_cost = register_gas_estimate * gas_price
 
+print(f"Gas price: {gas_price}")
+print(f"Registering cost: {register_cost}")
 """ 
 Estimating cost for the commit function requires the task to be started
 #estimate cost for committing work
@@ -45,9 +50,8 @@ commitTx = contract.functions.commitWork(0, part1, part2, votes).buildTransactio
 commit_gas_estimate = w3.eth.estimate_gas(commitTx)
 commit_cost = commit_gas_estimate * gas_price """
 
-entrance_fee = register_cost * 30
-funding = entrance_fee * 10000
-
+entrance_fee = register_cost
+funding = (entrance_fee + register_cost) * workersPerRound * rounds * 1000
 
 #set the fee and fund the task
 print(f"Entrance fee set at: {entrance_fee}")
