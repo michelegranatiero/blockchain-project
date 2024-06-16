@@ -33,13 +33,13 @@ export const Web3ContextProvider = ({children}) => {
     //console.log(contract.events);
     const deployedEmitter = contract.events.Deployed();
     deployedEmitter.on('data', (eventData) => {
-      console.log("Event data:", eventData);
+      console.log("Event data: ", eventData);
       setUpdate((k) => k + 1);
     });
 
     const registeredEmitter = contract.events.Registered();
     registeredEmitter.on('data', (eventData) => {
-      console.log("Event data:", eventData);
+      console.log("Event data: ", eventData);
       setUpdate((k) => k + 1);
     });
 
@@ -51,25 +51,25 @@ export const Web3ContextProvider = ({children}) => {
 
     const stopFundingEmitter = contract.events.StopFunding();
     stopFundingEmitter.on('data', (eventData) => {
-      console.log("Event data:", eventData);
+      console.log("Event data: ", eventData);
       setUpdate((k) => k + 1);
     });
 
     const needRandomnessEmitter = contract.events.NeedRandomness()
     needRandomnessEmitter.on('data', (eventData) => {
-      console.log("Event data:", eventData);
+      console.log("Event data: ", eventData);
       setUpdate((k) => k + 1);
     });
     
     const roundStartedEmitter = contract.events.RoundStarted();
     roundStartedEmitter.on('data', (eventData) => {
-      console.log("Event data:", eventData);
+      console.log("Event data: ", eventData);
       setUpdate((k) => k + 1);
     });
 
     const taskEndedEmitter = contract.events.TaskEnded();
     taskEndedEmitter.on('data', (eventData) => {
-      console.log("Event data:", eventData);
+      console.log("Event data: ", eventData);
       setUpdate((k) => k + 1);
     });
 
@@ -106,34 +106,34 @@ export const Web3ContextProvider = ({children}) => {
 
     const registeredEmitter = contract.events.Registered({ filter: { taskId: taskId } });
     registeredEmitter.on('data', (eventData) => {
-      console.log("Event data:", eventData);
+      console.log("Event data: ", eventData);
       setUpdate((k) => k + 1);
     });
 
     const newFundingEmitter = contract.events.NewFunding({ filter: { taskId: taskId } });
     newFundingEmitter.on('data', (eventData) => {
-      console.log("Event data:", eventData);
-      console.log("Values:", eventData.returnValues);
+      console.log("Event data: ", eventData);
+      console.log("Values: ", eventData.returnValues);
       
       setUpdate((k) => k + 1);
     });
 
     const stopFundingEmitter = contract.events.StopFunding({ filter: { taskId: taskId } });
     stopFundingEmitter.on('data', (eventData) => {
-      console.log("Event data:", eventData);
+      console.log("Event data: ", eventData);
       setUpdate((k) => k + 1);
     });
 
     // trycatch TO BE REMOVED, just for debugging
     const needRandomnessEmitter = contract.events.NeedRandomness({ filter: { taskId: taskId } });
     needRandomnessEmitter.on('data', (eventData) => {
-      console.log("Event data:", eventData);
+      console.log("Event data: ", eventData);
       const data = eventData.returnValues;
       try {
         const randomness = contract.methods.setRandomness(data.taskId, 1234).send({ from: wallet.accounts[0] }); //seed 1234
-        console.log("Randomness set:", randomness);
+        console.log("Randomness set: ", randomness);
       } catch (error) {
-        console.log("error setting randomness:", error);
+        console.log("error setting randomness: ", error);
       }
 
       setUpdate((k) => k + 1);
@@ -141,13 +141,13 @@ export const Web3ContextProvider = ({children}) => {
 
     const roundStartedEmitter = contract.events.RoundStarted({ filter: { taskId: taskId } });
     roundStartedEmitter.on('data', (eventData) => {
-      console.log("Event data:", eventData);
+      console.log("Event data: ", eventData);
       setUpdate((k) => k + 1);
     });
 
     const taskEndedEmitter = contract.events.TaskEnded({ filter: { taskId: taskId } });
     taskEndedEmitter.on('data', (eventData) => {
-      console.log("Event data:", eventData);
+      console.log("Event data: ", eventData);
       setUpdate((k) => k + 1);
     });
 
@@ -194,7 +194,7 @@ export const Web3ContextProvider = ({children}) => {
       const receipt = await contract.methods  // remove await if you want to use events below
         .deployTask(part1, part2, numRounds, workersPerRound)
         .send({from: wallet.accounts[0]});
-      console.log("Transaction receipt:", receipt);
+      console.log("Transaction receipt: ", receipt);
 
       /* receipt.on('transactionHash', (hash) => {console.log(hash)});
       receipt.on('receipt', (receipt) => {console.log(receipt)});
@@ -204,7 +204,7 @@ export const Web3ContextProvider = ({children}) => {
       //console.log(receipt.events.Deployed.returnValues.taskAddress)
       return true;
     } catch (error) {
-      console.error("Error registering:", error);
+      console.error("Error registering: ", error);
       return false;
     }
   }
@@ -230,11 +230,26 @@ export const Web3ContextProvider = ({children}) => {
         
         if (formatState(task.state) == "started") {
           task.hasCommitted = task.rounds.length > 0 ? await hasCommitted(task.id, wallet.accounts[0]) : true;
-          task.isWorkerSelected = task.rounds.length > 0 ? await isWorkerSelected(task.id, wallet.accounts[0]) : false;
+          task.isWorkerSelected = task.rounds.length > 0 ? await isWorkerSelected(task.id, wallet.accounts[0], task.rounds.length-1) : false;
           // selected round for the user (worker)
           task.workerRound = task.amWorker ? Math.floor(task.registeredWorkers.findIndex(
             (elem)=> elem == wallet.accounts[0]) / Number(task.workersPerRound))+1 : false;
+          
+          if ( task.isWorkerSelected && task.rounds[Number(task.numberOfRounds)-1]?.committedWorks.length == task.workersPerRound){
+            //worker last round score                      
+            console.log(wallet.accounts[0]);
+            
+            task.hasLRScore = await contract.methods.hasLRScore(task.id, wallet.accounts[0]).call();
+            console.log(task.hasLRScore);
+             
+          }
         }
+
+        if  (formatState(task.state) == "completed" && task.amWorker){
+          task.hasWithdrawn = await contract.methods.hasWithdrawn(task.id).call({ from: wallet.accounts[0] });
+        }
+
+        
       }
 
       // task advanced details (to be used on SINGLE TASK page)
@@ -253,10 +268,10 @@ export const Web3ContextProvider = ({children}) => {
       task.description = ipfsObj.description;
       task.file = ipfsObj.file;
 
-      //console.log(task);
+      //console.log(task);      
       return task
     } catch (error) {
-      console.error("Error retriving task:", error);
+      console.error("Error retriving task: ", error);
     }
   }
 
@@ -277,7 +292,7 @@ export const Web3ContextProvider = ({children}) => {
       //console.log(tasks);
       return tasks;
     } catch (error) {
-      console.error("Error retriving tasks:", error);
+      console.error("Error retriving tasks: ", error);
     }
     
   }
@@ -293,7 +308,7 @@ export const Web3ContextProvider = ({children}) => {
       //console.log(funders);
       return funders
     } catch (error) {
-      console.error("Error retriving funders:", error);
+      console.error("Error retriving funders: ", error);
     }
   }
 
@@ -308,7 +323,7 @@ export const Web3ContextProvider = ({children}) => {
       //console.log(funds);
       return funds
     } catch (error) {
-      console.error("Error retriving funds:", error);
+      console.error("Error retriving funds: ", error);
     }
   }
   
@@ -322,7 +337,7 @@ export const Web3ContextProvider = ({children}) => {
       const res = await contract.methods.getRoles(taskId).call({ from: wallet.accounts[0] });
       return res
     } catch (error) {
-      console.error("Error getting roles:", error);
+      console.error("Error getting roles: ", error);
     }
   }
   
@@ -335,7 +350,7 @@ export const Web3ContextProvider = ({children}) => {
     try {
       //console.log(wallet.accounts[0]);
       const receipt = await contract.methods.fund(taskId).send({ from: wallet.accounts[0], value: weiAmount });
-      console.log("Transaction receipt:", receipt);
+      console.log("Transaction receipt: ", receipt);
       return true;
     } catch (error) {
       console.error("Error funding:", error);
@@ -353,7 +368,7 @@ export const Web3ContextProvider = ({children}) => {
       console.log("Transaction receipt:", receipt);
       return true;
     } catch (error) {
-      console.error("Error stopping funding:", error);
+      console.error("Error stopping funding: ", error);
     }
   }
 
@@ -368,21 +383,21 @@ export const Web3ContextProvider = ({children}) => {
       console.log("Transaction receipt:", receipt);
       return true;
     } catch (error) {
-      console.error("Error registering:", error);
+      console.error("Error registering: ", error);
     }
   }
 
 
-  const isWorkerSelected = async (taskId, address) => {
+  const isWorkerSelected = async (taskId, address, round) => {
     if (!contract) {
       console.error("Contract instance is not available.");
       return;
     }
     try {
-      const res = await contract.methods.isWorkerSelected(taskId, address).call();
+      const res = await contract.methods.isWorkerSelected(taskId, address, round).call();
       return res
     } catch (error) {
-      console.error("Error in 'isWorkerSelected' method:", error);
+      console.error("Error in 'isWorkerSelected' method: ", error);
       return false; //default
     }
   }
@@ -397,13 +412,13 @@ export const Web3ContextProvider = ({children}) => {
       const res = await contract.methods.hasCommitted(taskId, address).call();
       return res
     } catch (error) {
-      console.error("Error in 'hasCommitted' method:", error);
+      console.error("Error in 'hasCommitted' method: ", error);
     }
   }
 
 
   // DA CONTROLLARE (SU SMART CONTRACT)
-  const commitWork = async (task, workFile, votesFile) => { /* VOTES SHOULD BE AN ARRAY, still to be defined */
+  const commitWork = async (task, workFile, votesFile) => {
     if (!contract) {
       console.error("Contract instance is not available.");
       return false;
@@ -411,11 +426,11 @@ export const Web3ContextProvider = ({children}) => {
     try {
       if (task.rounds.length == 0) return false; // task not started yet
 
-      const votes = [];
-      if (task.rounds.length == 1){
-        votes.push(1,2)// TO BE CHANGED, just for debugging
+      let votes = [];
+      if (task.rounds.length <= 1 /* || votesFile == null */){ // first round workers do not vote
+        votes = Array(task.workersPerRound).fill(0)// TO BE CHANGED?? just for 1st round
       }
-      else if (task.rounds.length > 1){
+      else{ // rounds > 1
         //handle json file
         const previousRoundWorkers = [];
         
@@ -448,43 +463,32 @@ export const Web3ContextProvider = ({children}) => {
 
       // upload workfile to IPFS
       console.log(workFile);
-      
-      const fileB64 = await fileToBase64(workFile);
-      const extension = workFile.name.split('.').pop();
-      //const fileObj = { name: workFile.name, content: fileB64, type: workFile.type };
-      const fileObj = { name: `${wallet.accounts[0]}.${extension}`, content: fileB64, type: workFile.type };
-      const ipfsCID = await sendToIPFS(fileObj, workFile.name);
-      if (!ipfsCID) {
-        alert("Error uploading file to IPFS.");
-        return;
+      const bytes32zero = "0x" + "0".repeat(64);
+      let [workPart1, workPart2] = [bytes32zero, bytes32zero];// for last round workers (they do not commit work)
+
+      if (task.rounds.length < task.numberOfRounds){ //if not last round workers (need to commit work)
+        const fileB64 = await fileToBase64(workFile);
+        const extension = workFile.name.split('.').pop();
+        //const fileObj = { name: workFile.name, content: fileB64, type: workFile.type };
+        const fileObj = { name: `${wallet.accounts[0]}.${extension}`, content: fileB64, type: workFile.type };
+        const ipfsCID = await sendToIPFS(fileObj, workFile.name);
+        if (!ipfsCID) {
+          alert("Error uploading file to IPFS.");
+          return;
+        }
+        // encode CID to 2 bytes32
+        [workPart1, workPart2] = encodeCIDto2Bytes32(ipfsCID);
       }
-
-      // encode CID to 2 bytes32
-      const [workPart1, workPart2] = encodeCIDto2Bytes32(ipfsCID);
-      
       console.log(task.id, workPart1, workPart2, votes);
-      
-      const res = await contract.methods.commitWork(task.id, workPart1, workPart2, votes).send({ from: wallet.accounts[0] });
+        
+      const res = await contract.methods.commit(task.id, workPart1, workPart2, votes).send({ from: wallet.accounts[0] });
       
       return res
+      
+      
     } catch (error) {
-      console.error("Error committing work:", error);
+      console.error("Error committing work: ", error);
       return false
-    }
-  }
-
-
-  // DA CONTROLLARE (SU SMART CONTRACT)
-  const getRanking = async (taskId) => {
-    if (!contract) {
-      console.error("Contract instance is not available.");
-      return;
-    }
-    try {
-      const res = await contract.methods.getRanking(taskId).call();
-      return res
-    } catch (error) {
-      console.error("Error retriving ranking:", error);
     }
   }
 
@@ -531,7 +535,37 @@ export const Web3ContextProvider = ({children}) => {
 
 
     } catch (error) {
-      console.error("Error retriving work:", error);
+      console.error("Error retriving work: ", error);
+    }
+  }
+
+  
+  //////////////////////////////////////////////////
+
+  const computeLastRoundScore = async (taskId) => {
+    if (!contract) {
+      console.error("Contract instance is not available.");
+      return;
+    }
+    try {      
+      const res = await contract.methods.computeLastRoundScore(taskId).send({ from: wallet.accounts[0] });
+      return res
+    } catch (error) {
+      console.error("Error computing score: ", error);
+    }
+  }
+
+
+  const withdrawReward = async (taskId, round) => {
+    if (!contract) {
+      console.error("Contract instance is not available.");
+      return;
+    }
+    try {
+      const res = await contract.methods.withdrawReward(taskId, round).send({ from: wallet.accounts[0] });
+      return res
+    } catch (error) {
+      console.error("Error withdrawing reward: ", error);
     }
   }
 
@@ -557,8 +591,9 @@ export const Web3ContextProvider = ({children}) => {
         isWorkerSelected,
         hasCommitted,
         commitWork,
-        getRanking,
         getRoundWork,
+        computeLastRoundScore,
+        withdrawReward,
         // ipfsFunctions
         fetchFromIPFS,
         downloadFile,

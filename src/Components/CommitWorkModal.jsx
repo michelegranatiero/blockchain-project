@@ -28,21 +28,28 @@ import {
   FormMessage,
 } from "@/Components/ui/form"
 
-const commitSchema = z.object({
-  votesFile: z.instanceof(FileList).refine((file) => {
-    
-    if (file.length == 0 || !file || file[0].type != "application/json") return false;
-    return true;
-  }),
-  commitFile: z.instanceof(FileList).refine((file) => {
-    if (file.length == 0 || !file) return false;
-    return true;
-  }),
-})
 
 // CHECK IF WORKER HAS ALREADY COMMITED WORK! EVEN IN SMART CONTRACT
 
 function CommitWorkModal({ className = "", disabledState = false, task, forceUpdate}) {
+
+  const baseSchema = {}
+  if (task.rounds.length < task.numberOfRounds) {
+    baseSchema.commitFile = z.instanceof(FileList).refine((file) => {
+      if (file.length == 0 || !file) return false;
+      return true;
+    })
+  }
+  if (task.rounds.length > 1) {
+    baseSchema.votesFile = z.instanceof(FileList).refine((file) => {
+      console.log(file);
+      
+      if (file.length == 0 || !file || file[0].type != "application/json") return false;
+      return true;
+    });
+  }
+
+  const commitSchema = z.object(baseSchema)
   
   const {wallet, commitWork} = useWeb3(); // create commitWork function in useWeb3
 
@@ -61,13 +68,18 @@ function CommitWorkModal({ className = "", disabledState = false, task, forceUpd
     // ✅ This will be type-safe and validated.
     setloadingBtn(true);
 
-    const res = await commitWork( task, values.commitFile[0], values.votesFile[0]);
+    let votes = null;
+    let work = null;
+    if(task.rounds.length > 1) votes = values.votesFile[0]
+    if (task.rounds.length < task.numberOfRounds) work = values.commitFile[0];
+
+    const res = await commitWork( task, work, votes);
     if (res) {
       setOpen(false);
       alert("Transaction successful");
       //window.location.reload();
       forceUpdate((k) => k + 1);
-    }else alert("Transaction canceled or denied.");
+    }else alert("Transaction canceled or denied.\n\nCheck if your \"votes\" file contains all and only the correct addresses for the previous round workers.");
     setloadingBtn(false);
   }
 
@@ -89,38 +101,38 @@ function CommitWorkModal({ className = "", disabledState = false, task, forceUpd
         <DialogHeader>
           <DialogTitle>Commit your work</DialogTitle>
           <DialogDescription>
-            insert your votes and file with your weights.
+            Upload your files.
           </DialogDescription>
         </DialogHeader>
         <Form {...form} >
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+          {task.rounds.length > 1? <FormField
+            control={form.control}
+            name="votesFile"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel htmlFor="votesFile">Votes File (.json)</FormLabel>
+                <FormControl>
+                  <Input type="file"{...votesFileRef} accept="application/json" />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          /> : null}
+          {task.rounds.length < task.numberOfRounds ?
             <FormField
-              control={form.control}
-              name="votesFile"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel htmlFor="votesFile">Votes File (.json)</FormLabel>
-                  <FormControl>
-                    <Input type="file"{...votesFileRef} accept="application/json" />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="commitFile"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel htmlFor="commitFile">Commit File (.pickle)</FormLabel>
-                  <FormControl>
-                    <Input type="file" {...commitFileRef}/>
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          {/* <div className='text-end'> */}
+            control={form.control}
+            name="commitFile"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel htmlFor="commitFile">Commit File (.pickle)</FormLabel>
+                <FormControl>
+                  <Input type="file" {...commitFileRef}/>
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          /> : null}
           <DialogFooter >
             <DialogClose asChild>
               <Button type="button" variant="outline">

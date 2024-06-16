@@ -1,5 +1,4 @@
-import { Button } from "./ui/button";
-import { NavLink, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import {
   Card,
   CardContent,
@@ -9,17 +8,10 @@ import {
   CardTitle,
 } from "@/Components/ui/card";
 
-import RegisterTaskModal from "@/Components/RegisterTaskModal";
-import FundTaskModal from "@/Components/FundTaskModal";
-import GetWeightsBtn from "@/Components/GetWeightsBtn";
-import DownloadFileButton from "@/Components/DownloadFileButton";
-import CommitWorkModal from "@/Components/CommitWorkModal";
-import StopFundingModal from "@/Components/StopFundingModal";
 import { ScrollArea } from "@/Components/ui/scroll-area"
 import { Badge } from "@/Components/ui/badge"
-import { useEffect, useState } from "react";
-import { useWeb3 } from "@/hooks/useWeb3";
 import {formatState, capitalizeFirstChar} from "@/utils/formatWeb3";
+import TaskButtons from "@/Components/TaskButtons";
 
 function TaskCard({ forceUpd, task}) {
 
@@ -92,32 +84,7 @@ function TaskCard({ forceUpd, task}) {
           </div>
           
           <div className="flex flex-wrap sm:flex-nowrap justify-around gap-3 p-6 sm:flex-col sm:justify-center sm:h-full sm:w-40">
-            { formatState(task.state) == "deployed" ? <>
-              <FundTaskModal taskId={task.id}
-                disabledState={!formatState(task.state) == "deployed" || task.fundingCompleted}
-                forceUpdate={setForceUpdate}/>
-              <RegisterTaskModal taskId={task.id}
-                disabledState={task.amWorker || !formatState(task.state) == "deployed" || task.registeredWorkers.length >= task.workersPerRound*task.numberOfRounds} 
-                forceUpdate={setForceUpdate}/>
-            </>: null}
-            { formatState(task.state) == "deployed" && task.amAdmin ?
-              <StopFundingModal taskId={task.id}
-                disabledState={!formatState(task.state) == "deployed" || task.fundingCompleted} 
-                forceUpdate={setForceUpdate}/>
-              : null}
-            { formatState(task.state) == "started" && task.isWorkerSelected && task.rounds.length > 1 ? <>
-              <GetWeightsBtn taskId={task.id} round={task.rounds.length-1}// to be implemented
-                disabledState={!formatState(task.state) == "deployed"}
-                forceUpdate={setForceUpdate}/>
-            </>: null}
-            { formatState(task.state) == "started" && task.isWorkerSelected ? <>
-            <CommitWorkModal task={task}
-              disabledState={!formatState(task.state) == "deployed" || task.hasCommitted}
-              forceUpdate={setForceUpdate}/>
-            </>: null}
-            <DownloadFileButton ipfsCID={task.file}
-              forceUpdate={setForceUpdate}/> {/* always available */}
-            {/* create button for getRanking when task is completed?? create button for claim reward? */}
+          <TaskButtons task={task} setForceUpdate={setForceUpdate}/>
           </div>
         </Card>
     </article>

@@ -5,7 +5,7 @@ import { Loader2 } from "lucide-react"
 
 function GetWeightsBtn({ className = "", disabledState = false, taskId, round, forceUpdate}) {
 
-  const {wallet, getRoundWork, downloadFile} = useWeb3();
+  const {wallet, getRoundWork} = useWeb3();
 
   const [loadingBtn, setloadingBtn] = useState(false);
 
@@ -18,7 +18,8 @@ function GetWeightsBtn({ className = "", disabledState = false, taskId, round, f
     }
 
     setloadingBtn(true);
-    const res = await getRoundWork(taskId, round); //download zip file
+    //round-1 
+    const res = await getRoundWork(taskId, round); //download zip file 
     if (res) {
       forceUpdate((k) => k + 1);
     }else alert("Request failed.");
@@ -36,35 +37,3 @@ function GetWeightsBtn({ className = "", disabledState = false, taskId, round, f
 }
 
 export default GetWeightsBtn;
-
-
-
-{/* <Dialog open={open} onOpenChange={handleOpenChanging}>
-  <DialogTrigger asChild onClick={(e) => {e.stopPropagation()}}>
-    <Button className={` ${className}`} disabled={disabledState}>Get Weights</Button>
-  </DialogTrigger>
-  <DialogContent className="sm:max-w-[470px]">
-    <DialogHeader>
-      <DialogTitle>Confirm</DialogTitle>
-      <DialogDescription>
-        Do you want to get the weights of this task?
-      </DialogDescription>
-    </DialogHeader>
-    <DialogFooter>
-      <DialogClose asChild>
-        <Button type="button" variant="secondary">
-          Close
-        </Button>
-      </DialogClose>
-      {loadingBtn ? 
-      <Button disabled>
-        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-        Please wait
-      </Button>
-      : <Button type="submit" onClick={onRegister}>Register</Button>
-      }
-      
-      
-    </DialogFooter>
-  </DialogContent>
-</Dialog> */}
