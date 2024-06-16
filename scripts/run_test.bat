@@ -27,7 +27,7 @@ start python .\scripts\python\number_oracle.py
 echo DONE
 call ping 127.0.0.1 -n 2 > nul
 echo Deploying the task...
-start python .\scripts\python\deployTask.py
+start cmd /k python .\scripts\python\deployTask.py
 echo DONE
 
 echo Running the workers...
