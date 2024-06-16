@@ -444,16 +444,16 @@ contract FedMLContract {
         return !EnumerableSet.contains(taskList[_taskId].pendingRewards, msg.sender);
     }
 
-    function withdrawReward(uint _taskId, uint _round) external payable {
+    function withdrawReward(uint _taskId) external payable {
         Task storage task  = taskList[_taskId];
         require(!hasWithdrawn(_taskId), "You have already withdrawn the reward"); //checks also other things
         EnumerableSet.remove(task.pendingRewards, msg.sender);
-        
+        uint round = getWorkerRound(_taskId);
         uint reward;
-        if (_round == task.metadata.numberOfRounds-1) {
-            reward = computeLastRoundReward(_taskId, _round);
+        if (round == task.metadata.numberOfRounds-1) {
+            reward = computeLastRoundReward(_taskId, round);
         } else {
-            reward = computeReward(_taskId, _round);
+            reward = computeReward(_taskId, round);
         }
         payable(msg.sender).transfer(reward);
     }
@@ -522,5 +522,15 @@ contract FedMLContract {
 
     function abs(int x) internal pure returns (uint) {
         return uint(x >= 0 ? x : -x);
+    }
+
+    function getWorkerRound(uint _taskId) validTask(_taskId) internal view returns (uint round) {
+        //iterate over registerd workers and return the round of the worker as the division of the index by the number of workers per round
+        Task storage task = taskList[_taskId];
+        for (uint i = 0; i < task.metadata.registeredWorkers.length; i++) {
+            if (task.metadata.registeredWorkers[i] == msg.sender) {
+                return i / task.metadata.workersPerRound;
+            }
+        }
     }
 }

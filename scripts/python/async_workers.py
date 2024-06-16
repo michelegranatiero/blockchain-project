@@ -78,7 +78,7 @@ class worker:
         commits = self.contract.functions.getRoundWork(0, self.round-1).call()
         previous_work = [decode_2_bytes_32_to_CID(commit[1],commit[2]) for commit in commits]
         votes = self.train(previous_work, device, ipfsclient)
-        tx_hash = self.contract.functions.lastRoundCommit(0, votes).transact({"from":self.address})
+        tx_hash = self.contract.functions.commit(0, votes, commits[1], commits[2]).transact({"from":self.address})
         w3.eth.wait_for_transaction_receipt(tx_hash)
 
         commit_ended_event = self.contract.events['LastRoundCommittmentEnded'].createFilter(fromBlock='latest')

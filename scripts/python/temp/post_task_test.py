@@ -17,7 +17,7 @@ address2 = w3.eth.accounts[-10]
 balance = w3.eth.get_balance(address1)
 
 print(f"{address1[:10]}: {balance}")
-contract.functions.withdrawReward(0,0).transact({'from':address1})
+contract.functions.withdrawReward(0).transact({'from':address1})
 new_balance = w3.eth.get_balance(address1)
 print(f"Reward: {new_balance - balance}")
 print(f"{address1[:10]}: {new_balance}")
