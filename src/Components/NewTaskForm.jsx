@@ -4,6 +4,8 @@ import { useForm } from "react-hook-form"
 
 import { Button } from "@/Components/ui/button"
 import { useWeb3 } from '@/hooks/useWeb3';
+import  { gweiToWei } from '@/utils/formatWeb3'
+
 
 import {DialogClose, DialogFooter} from "@/Components/ui/dialog"
 import {
@@ -29,7 +31,10 @@ const taskSchema = z.object({
   descr: z.coerce.string().min(2).max(1000),
   numRounds: z.coerce.number().min(2).max(1000),
   workersPerRound: z.coerce.number().min(2).max(10000),
-  entranceFee: z.coerce.number().min(1),
+  entranceFee: z.coerce.number().refine((entranceFee) => {
+    if (gweiToWei(entranceFee) >= 1) return true;
+    return false;
+  }, { message: "Entrance fee must be at least 1 wei (0.000000001 gwei)."}),
   file: z.instanceof(FileList).refine((file) => {
     if (file.length == 0 || !file) return false;
     return true;
@@ -61,7 +66,14 @@ function NewTaskForm({setOpenState, forceUpdate}) {
 
     setloadingBtn(true);
     
-    const response = await createTask(values.title, values.descr, values.numRounds, values.workersPerRound, values.entranceFee, values.file[0]);
+    const response = await createTask(
+      values.title, 
+      values.descr, 
+      values.numRounds, 
+      values.workersPerRound, 
+      gweiToWei(values.entranceFee), 
+      values.file[0]
+    );
     if (response){
       setOpenState(false);
       alert("Task created successfully");
@@ -101,7 +113,7 @@ function NewTaskForm({setOpenState, forceUpdate}) {
     },
     {
       name: "entranceFee",
-      label: "Entrance Fee (wei)",
+      label: "Entrance Fee (Gwei)",
       type: "number",
       placeholder: "1",
     },

@@ -21,6 +21,7 @@ smartContract = w3.eth.contract(address=contract_address, abi=abi)
 
 device = ml_utils.getDevice()
 
+taskId = 2
 
 class worker:
     def __init__(self, address, contract, dataset):
@@ -32,21 +33,21 @@ class worker:
         self.testdata = dataset[1]
 
     async def simulate(self):
-        entrance_fee = self.contract.functions.getEntranceFee(0).call()
-        tx_hash = self.contract.functions.register(0).transact({'from':self.address, 'value':entrance_fee})
+        entrance_fee = self.contract.functions.getEntranceFee(taskId).call()
+        tx_hash = self.contract.functions.register(taskId).transact({'from':self.address, 'value':entrance_fee})
         receipt = w3.eth.wait_for_transaction_receipt(tx_hash)
         if receipt:
             print(f'{self.address[:10]} registered to the task!')
             print(f'{self.address[:10]} listening for events...')
 
             round_start_event_filter = self.contract.events['RoundStarted'].createFilter(fromBlock='latest')
-            numberOfRounds = self.contract.functions.getNumberOfRounds(0).call()
+            numberOfRounds = self.contract.functions.getNumberOfRounds(taskId).call()
 
             while not self.selected:
 
                 for event in round_start_event_filter.get_new_entries():
                     round = event.args["roundNumber"]
-                    self.selected = self.contract.functions.isWorkerSelected(0,self.address,round).call({'from':self.address})
+                    self.selected = self.contract.functions.isWorkerSelected(taskId,self.address,round).call({'from':self.address})
                     if self.selected:
                         self.round = round
                         print(f"Worker at address {self.address[:10]} was selected for round {self.round}")
@@ -63,7 +64,7 @@ class worker:
     def handle_round_start_event(self, event):
         previous_work = []
         if self.round != 0:
-            commits = self.contract.functions.getRoundWork(0, self.round-1).call({'from':self.address})
+            commits = self.contract.functions.getRoundWork(taskId, self.round-1).call({'from':self.address})
             previous_work = [decode_2_bytes_32_to_CID(commit[1],commit[2]) for commit in commits]
             print(f"Previous work: {previous_work}")
         print(f"Round {self.round}:{self.address[:10]} start training...")
@@ -71,14 +72,14 @@ class worker:
         print(f"Votes: {votes}")
         print(f"{self.address[:10]} submitting work...\n")
         part1, part2 = encode_CID_to_2_bytes_32(work)
-        tx_hash = self.contract.functions.commit(0, part1, part2, votes).transact({"from":self.address})
+        tx_hash = self.contract.functions.commit(taskId, part1, part2, votes).transact({"from":self.address})
         w3.eth.wait_for_transaction_receipt(tx_hash)
     
     async def handle_last_round_start_event(self, event):
-        commits = self.contract.functions.getRoundWork(0, self.round-1).call()
+        commits = self.contract.functions.getRoundWork(taskId, self.round-1).call()
         previous_work = [decode_2_bytes_32_to_CID(commit[1],commit[2]) for commit in commits]
         votes = self.train(previous_work, device, ipfsclient)
-        tx_hash = self.contract.functions.commit(0, votes, commits[1], commits[2]).transact({"from":self.address})
+        tx_hash = self.contract.functions.commit(taskId, votes, commits[1], commits[2]).transact({"from":self.address})
         w3.eth.wait_for_transaction_receipt(tx_hash)
 
         commit_ended_event = self.contract.events['LastRoundCommittmentEnded'].createFilter(fromBlock='latest')
@@ -87,7 +88,7 @@ class worker:
             for event in commit_ended_event.get_new_entries():
                 done = True
                 print(f"Worker {self.address[:10]} computing last round score...")
-                tx_hash = self.contract.functions.computeLastRoundScore(0).transact({"from":self.address})
+                tx_hash = self.contract.functions.computeLastRoundScore(taskId).transact({"from":self.address})
                 w3.eth.wait_for_transaction_receipt(tx_hash)
             await asyncio.sleep(1)
 
@@ -128,7 +129,7 @@ class worker:
                 if accuracy > best_accuracy:
                     best_state_dict = state_dict
             print("Check if worker is in the last round")
-            if self.round + 1 == self.contract.functions.getNumberOfRounds(0).call() : #worker of the last round
+            if self.round + 1 == self.contract.functions.getNumberOfRounds(taskId).call() : #worker of the last round
                 return votes
                         
             model.load_state_dict(best_state_dict)
@@ -175,7 +176,7 @@ class worker:
     
 async def main():
 
-    task = smartContract.functions.getTask(0).call()
+    task = smartContract.functions.getTask(taskId).call()
     workersRequired = task[1]*task[2]
     dataLoader = ml_utils.getDataLoaders(workersRequired)
 
