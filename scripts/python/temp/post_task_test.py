@@ -11,7 +11,7 @@ w3 = Web3(Web3.HTTPProvider('http://127.0.0.1:8545'))
 contract_address = Web3.to_checksum_address('0x5fbdb2315678afecb367f032d93f642f64180aa3')
 contract = w3.eth.contract(address=contract_address, abi=abi)
 
-address1 = Web3.to_checksum_address('0x90f79bf6eb2c4f870365e785982e1f101e93b906')
+address1 = Web3.to_checksum_address('0x70997970c51812dc3a010c7d01b50e0d17dc79c8')
 address2 = w3.eth.accounts[-10]
 
 balance = w3.eth.get_balance(address1)
