@@ -15,6 +15,8 @@ import { Input } from "@/Components/ui/input"
 import { Loader2 } from "lucide-react"
 
 import { useWeb3 } from "@/hooks/useWeb3";
+import  { gweiToWei, weiToGwei } from '@/utils/formatWeb3'
+
 
 import { z } from 'zod';
 import { zodResolver } from "@hookform/resolvers/zod"
@@ -35,22 +37,23 @@ function FundTaskModal({ className = "", disabledState = false, taskId, forceUpd
   const {wallet, fund} = useWeb3();
   const [maxAmount, setMaxAmount] = useState(0);
   useEffect(() => {
-    setMaxAmount(wallet.balance);
+    setMaxAmount(Number(wallet.balance));
     
   }, [wallet]);
 
   const fundSchema = z.object({
-    weiAmount: z.coerce.bigint().min(1, {
-      message: "The amount of wei should be greater than 0.",
-    }).max(maxAmount, {
+    amount: z.coerce.number().max(weiToGwei(maxAmount), {
       message: "You don't have enough funds in your account.",
-    }),
+    }).refine((gwei) => {      
+      if (gweiToWei(gwei) >= 1) return true;
+      return false;
+    }, { message: "The amount must be at least 1 wei (0.000000001 gwei)."}),
   })
 
   const form = useForm({
     resolver: zodResolver(fundSchema),
     defaultValues: {
-      weiAmount: "",
+      amount: "",
     },
   });
 
@@ -62,7 +65,7 @@ function FundTaskModal({ className = "", disabledState = false, taskId, forceUpd
     // Do something with the form values.
     // ✅ This will be type-safe and validated.
     setloadingBtn(true);
-    const res = await fund( taskId, values.weiAmount);
+    const res = await fund( taskId, gweiToWei(values.amount));
     if (res) {
       setOpen(false);
       alert("Task funded successfully");
@@ -98,12 +101,12 @@ function FundTaskModal({ className = "", disabledState = false, taskId, forceUpd
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
             <FormField
               control={form.control}
-              name="weiAmount"
+              name="amount"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel htmlFor="weiAmount">Amount (wei)</FormLabel>
+                  <FormLabel htmlFor="amount">Amount (Gwei)</FormLabel>
                   <FormControl>
-                    <Input type="number" placeholder="insert a value greater than 0" {...field} />
+                    <Input type="number" placeholder="insert a value" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

@@ -1,4 +1,5 @@
 import { useParams } from "react-router-dom";
+import { useEffect, useState } from "react";
 import { Card,
   CardContent,
   CardDescription,
@@ -8,8 +9,7 @@ import { Card,
 } from "@/Components/ui/card";
 import { Badge } from "@/Components/ui/badge";
 import { useWeb3 } from "@/hooks/useWeb3";
-import { useEffect, useState } from "react";
-
+import  { gweiToWei, weiToGwei } from '@/utils/formatWeb3'
 import  { formatAddress, formatState, capitalizeFirstChar } from '@/utils/formatWeb3'
 
 import TaskButtons from "@/Components/TaskButtons";
@@ -81,9 +81,9 @@ function Task() {
           <hr />
           <CardDescription>{task.description}</CardDescription>
           <hr />
-          <p>Entrance fee (wei): {Number(task.entranceFee)}</p>
-          <p>Contract balance (wei): {contractBalance}</p>
-          <p>Funds (wei): {Number(task.funds)}</p>
+          <p>Entrance fee (Gwei): {weiToGwei(Number(task.entranceFee))}</p>
+          <p>Contract balance (Gwei): {weiToGwei(contractBalance)}</p>
+          <p>Funds (Gwei): {weiToGwei(Number(task.funds))}</p>
           <p># Funders: {String(task.funders.length)}</p>
           <p>Admin Address: {formatAddress(String(task.admin))}</p>
           <p>

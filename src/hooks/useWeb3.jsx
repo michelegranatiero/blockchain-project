@@ -7,7 +7,7 @@ import JSZip from 'jszip';
 import { saveAs } from 'file-saver';
 
 import { contractAddress, contractAbi} from '@/utils/constants';
-import  { formatState } from '@/utils/formatWeb3'
+import { formatState } from '@/utils/formatWeb3'
 import { sendToIPFS,fetchFromIPFS, fileToBase64, downloadFile, encodeCIDto2Bytes32, decode2Bytes32toCID } from '@/utils/ipfsFunctions';
 const Web3Context = createContext({})
 
@@ -459,19 +459,26 @@ export const Web3ContextProvider = ({children}) => {
         const votesObj = JSON.parse(votesText);
         
 
+        //check if size of votes is the same as the size of previousRoundWorkers
         if (votesObj.length != previousRoundWorkers.length){
           console.log("size doesn't match");
           
           return false; // size doesn't match
         }
 
-        // Check if every address of previousRoundWorkers is in the votesFile
         for (let i = 0; i < previousRoundWorkers.length; i++) {
+          // check if every address of previousRoundWorkers is in the votesFile
           let idx = votesObj.findIndex(elem => elem.address == previousRoundWorkers[i]);
           if (idx == -1){
             console.log("address not found");
             return false; // address not found
           }
+          // check if vote is between 0 and 1000
+          if (votesObj[idx].vote < 0 || votesObj[idx].vote > 1000){
+            console.log("vote out of range");
+            return false; // vote out of range
+          }
+          
           votes.push(votesObj[idx].vote);
         }
       }

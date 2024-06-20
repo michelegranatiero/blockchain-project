@@ -23,3 +23,10 @@ export const formatBalance = (rawBalance) => {
     else return string;
   }
 
+  export const weiToGwei = (wei) => {
+    return wei / 1000000000;
+  }
+
+  export const gweiToWei = (gwei) => {
+    return gwei * 1000000000;
+  }

@@ -45,7 +45,7 @@ function WithdrawRewardButton({ className = "", disabledState = false, taskId, f
   return (
     <Dialog open={open} onOpenChange={handleOpenChanging}>
       <DialogTrigger asChild onClick={(e) => {e.stopPropagation()}}>
-        <Button className={` ${className}`} disabled={disabledState}>Withdraw Reward</Button>
+        <Button className={` ${className}`} disabled={disabledState}>Claim Reward</Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-[470px]">
         <DialogHeader>

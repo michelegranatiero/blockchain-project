@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { useWeb3 } from "@/hooks/useWeb3";
+import  { gweiToWei, weiToGwei } from '@/utils/formatWeb3'
+
 import { Button } from "@/Components/ui/button"
 import {
   Dialog,
@@ -13,11 +15,10 @@ import {
 } from "@/Components/ui/dialog"
 import { Loader2 } from "lucide-react"
 
-
-
 function RegisterTaskModal({ className = "", disabledState = false, taskId, entranceFee, forceUpdate}) {
 
   const {wallet, register} = useWeb3();
+  
 
   const [open, setOpen] = useState(false);
   const [loadingBtn, setloadingBtn] = useState(false);
@@ -65,7 +66,7 @@ function RegisterTaskModal({ className = "", disabledState = false, taskId, entr
             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
             Please wait
           </Button>
-          : <Button type="submit" onClick={onRegister}>Register</Button>
+          : <Button type="submit" onClick={onRegister}>Register for {weiToGwei(Number(entranceFee))} Gwei</Button>
           }
           
           
