@@ -22,7 +22,7 @@ part1, part2 = utils.encode_CID_to_2_bytes_32(cid)
 rounds = 2
 workersPerRound = 2
 
-tx_hash = contract.functions.deployTask(part1, part2, rounds, workersPerRound).transact({"from":my_address})
+tx_hash = contract.functions.deployTask(part1, part2, rounds, workersPerRound, 0).transact({"from":my_address})
 receipt = w3.eth.wait_for_transaction_receipt(tx_hash)
 
 
@@ -30,9 +30,9 @@ receipt = w3.eth.wait_for_transaction_receipt(tx_hash)
 gas_price = w3.eth.gas_price
 
 #estimate cost for registering
-registerTx = contract.functions.register(0).buildTransaction({
+registerTx = contract.functions.register(0).build_transaction({
     'from': my_address,  # L'indirizzo dell'account che esegue la transazione
-    'nonce': w3.eth.getTransactionCount(my_address)
+    'nonce': w3.eth.get_transaction_count(my_address)
 })
 register_gas_estimate = w3.eth.estimate_gas(registerTx)
 register_cost = register_gas_estimate * gas_price
@@ -43,9 +43,9 @@ print(f"Registering cost: {register_cost}")
 Estimating cost for the commit function requires the task to be started
 #estimate cost for committing work
 votes= [random.randint(1,1000) for i in range(10)]
-commitTx = contract.functions.commitWork(0, part1, part2, votes).buildTransaction({
+commitTx = contract.functions.commitWork(0, part1, part2, votes).build_transaction({
     'from': my_address,  # L'indirizzo dell'account che esegue la transazione
-    'nonce': w3.eth.getTransactionCount(my_address)
+    'nonce': w3.eth.get_transaction_count(my_address)
 })
 commit_gas_estimate = w3.eth.estimate_gas(commitTx)
 commit_cost = commit_gas_estimate * gas_price """
