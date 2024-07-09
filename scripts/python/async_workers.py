@@ -21,7 +21,7 @@ smartContract = w3.eth.contract(address=contract_address, abi=abi)
 
 device = ml_utils.getDevice()
 
-taskId = 2
+taskId = 0
 
 class worker:
     def __init__(self, address, contract, dataset):
@@ -40,7 +40,7 @@ class worker:
             print(f'{self.address[:10]} registered to the task!')
             print(f'{self.address[:10]} listening for events...')
 
-            round_start_event_filter = self.contract.events['RoundStarted'].createFilter(fromBlock='latest')
+            round_start_event_filter = self.contract.events['RoundStarted'].create_filter(fromBlock='latest')
             numberOfRounds = self.contract.functions.getNumberOfRounds(taskId).call()
 
             while not self.selected:
@@ -82,7 +82,7 @@ class worker:
         tx_hash = self.contract.functions.commit(taskId, commits[0][1], commits[0][2], votes).transact({"from":self.address})
         w3.eth.wait_for_transaction_receipt(tx_hash)
 
-        commit_ended_event = self.contract.events['LastRoundCommittmentEnded'].createFilter(fromBlock='latest')
+        commit_ended_event = self.contract.events['LastRoundCommittmentEnded'].create_filter(fromBlock='latest')
         done = False
         while not done:
             for event in commit_ended_event.get_new_entries():

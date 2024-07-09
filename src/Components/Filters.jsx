@@ -10,14 +10,10 @@ function Filters({ className = "" }) {
   const { wallet } = useMetaMask();
   const { globFilters } = useWeb3();
   
-  /* useEffect(() => {
-    console.log(filter);
-  }, [filter]); */
   
   const stateFilters = ["deployed", "started", "completed"];
   const roleFilters = ["admin", "funder", "worker"];
 
-  //const [filter, setFilter] = useState([/* ...stateFilters, ...roleFilters */]);
 
   const [filters, setFilters] = globFilters;
 

@@ -1,6 +1,3 @@
-//import EventsApp from "../../artifacts/contracts/EventsApp.sol/EventsApp.json";
-//import Task from "../../artifacts/contracts/Task.sol/Task.json";
-//import StorageFactory from "../../artifacts/contracts/StorageFactory.sol/StorageFactory.json";
 import FedMLContract from "../../artifacts/contracts/FedMLContract.sol/FedMLContract.json";
 
 //Contract address and ABI

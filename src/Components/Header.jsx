@@ -8,18 +8,6 @@ import { Sheet, SheetClose, SheetContent, SheetTrigger } from "./ui/sheet";
 
 import { useMetaMask } from "@/hooks/useMetaMask";
 
-/* const NavLinks = ({closeNav}) => {
-  return (
-    <>
-      <li className={styles.nav__item}>
-        <NavLink to={"mytasks"} className={styles.nav__link} onClick={closeNav}>My Tasks</NavLink>
-      </li>
-      <li className={styles.nav__item}>
-        <NavLink to={"#"} className={styles.btn} onClick={closeNav}>Account?</NavLink>
-      </li>
-    </>
-  )
-} */
 const routes = [
   {
     path: "/",
@@ -57,17 +45,6 @@ function Header() {
                       </NavLink>
                     </SheetClose>
                   ))}
-                  {/* {wallet.accounts.length > 0 && (
-                    <SheetClose asChild>
-                    <Button asChild variant="outline">
-                      <NavLink
-                        to={"account"}
-                        className="text-sm font-medium transition-colors">
-                        Account
-                      </NavLink>
-                    </Button>
-                  </SheetClose>
-                  )} */}
                 </nav>
               </SheetContent>
             </Sheet>
@@ -85,15 +62,6 @@ function Header() {
                 </NavLink>
               </Button>
             ))}
-            {/* {wallet.accounts.length > 0 && (
-              <Button asChild variant="Link">
-              <NavLink
-                to={"account"}
-                className="text-sm font-medium transition-colors">
-                Account
-              </NavLink>
-            </Button>
-            )} */}
           </nav>
           <div className="flex items-center">
             <Button

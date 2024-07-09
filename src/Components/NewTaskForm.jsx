@@ -139,9 +139,6 @@ function NewTaskForm({setOpenState, forceUpdate}) {
                     <Input type={item.type} placeholder={item.placeholder} {...field}/>
                   }
                 </FormControl>
-                {/* <FormDescription>
-                  Description
-                </FormDescription> */}
                 <FormMessage />
               </FormItem>
             )}
@@ -174,11 +171,7 @@ function NewTaskForm({setOpenState, forceUpdate}) {
           </Button>
           : <Button type="submit">Submit</Button>
           }
-          
         </DialogFooter>
-          
-        {/* </div> */}
-
       </form>
     </Form>
   )

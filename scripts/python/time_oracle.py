@@ -15,7 +15,7 @@ f.close()
 contract_address = Web3.to_checksum_address('0x5fbdb2315678afecb367f032d93f642f64180aa3')
 contract = w3.eth.contract(address=contract_address, abi=abi)
 
-deployed_event_filter = contract.events['Deployed'].createFilter(fromBlock='latest')
+deployed_event_filter = contract.events['Deployed'].create_filter(fromBlock='latest')
 
 accounts = w3.eth.accounts
 #the oracle and the task admin addresses are the same

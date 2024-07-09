@@ -27,11 +27,11 @@ contract FedMLContract {
     address oracle;
     bool public active;
 
-    constructor (address _oracle) {
+    /* constructor (address _oracle) {
        owner = payable(msg.sender);
        oracle = _oracle;
        active = true;
-   }
+   } */
 
     ///@notice The state of a task
     ///@custom:state DEPLOYED the task is deployed

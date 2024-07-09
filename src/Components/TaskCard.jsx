@@ -24,29 +24,6 @@ function TaskCard({ forceUpd, task}) {
 
   const [forceUpdate, setForceUpdate] = forceUpd;
 
-  /* const {wallet} = useWeb3();
-
-  const [data, setData] = useState({
-    amFunder: false,
-    amWorker: false,
-    amAdmin: false,
-  }); */
-
-
-  
-/*   useEffect(() => {    
-    async function getData() {
-      let roles = await getRoles(task.id);
-      setData(prevData => ({ ...prevData,
-        amFunder: roles.funder,
-        amWorker: roles.worker,
-        amAdmin: roles.admin,
-      }));
-    }
-    //if (contract && wallet.accounts.length > 0) getDetails();
-    getData();
-  }, [forceUpdate, wallet]); */
-
   return (
     <article
       className="rounded-lg outline-0 ring-primary transition duration-300

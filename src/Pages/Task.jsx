@@ -82,7 +82,7 @@ function Task() {
           <CardDescription>{task.description}</CardDescription>
           <hr />
           <p>Entrance fee (Gwei): {weiToGwei(Number(task.entranceFee))}</p>
-          <p>Contract balance (Gwei): {weiToGwei(contractBalance)}</p>
+          {/* <p>Contract balance (Gwei): {weiToGwei(contractBalance)}</p> */}
           <p>Funds (Gwei): {weiToGwei(Number(task.funds))}</p>
           <p># Funders: {String(task.funders.length)}</p>
           <p>Admin Address: {formatAddress(String(task.admin))}</p>
@@ -99,9 +99,11 @@ function Task() {
             <p>Committed Works in this round: {String(task.rounds[task.rounds.length-1].committedWorks.length)}/{String(task.workersPerRound)}</p>
             {wallet.accounts.length > 0 ?<>
               <p>Are you selected for current round?: {task.isWorkerSelected ? "Yes" : "No"}</p>
-              {task.amWorker ? <p>You are selected for round: {String(task.workerRound)}</p>: null}
             </>: null}
           </> : null}
+          {["started", "completed"].includes(formatState(task.state) && wallet.accounts.length > 0)?<>
+              {task.amWorker ? <p>You are selected for round: {String(task.workerRound)}</p>: null}
+          </>: null}
 
         </CardContent>
         <CardFooter className="flex flex-wrap gap-3 justify-center items-end w-full mt-auto">

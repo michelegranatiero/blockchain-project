@@ -6,17 +6,6 @@ import { useWeb3 } from "@/hooks/useWeb3";
 
 import  { formatState } from '@/utils/formatWeb3'
 
-/* const tasks = [
-  {
-    address: 0x1234,
-    title: "Task 1",
-    description: "Description task 1",
-    content:
-      "Lorem ipsum dolor sit amet consectetur adipisicing elit. Quisquam fuga totam quam id sunt officia at dolores quia quis adipisci!",
-  },
-]; */
-
-
 function Home() {
 
   const {wallet, contract, getAllTasks, globFilters, setHomeEvents } = useWeb3();
