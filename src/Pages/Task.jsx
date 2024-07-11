@@ -33,7 +33,8 @@ function Task() {
       if (tsk) setTask(tsk);
       let balance = await getContractBalance();
       if (balance) setContractBalance(balance);
-      setLoading(false);
+      setLoading(false);      
+      
     }
     if (contract){
       fetchTask();
@@ -101,8 +102,8 @@ function Task() {
               <p>Are you selected for current round?: {task.isWorkerSelected ? "Yes" : "No"}</p>
             </>: null}
           </> : null}
-          {["started", "completed"].includes(formatState(task.state) && wallet.accounts.length > 0)?<>
-              {task.amWorker ? <p>You are selected for round: {String(task.workerRound)}</p>: null}
+          {["started", "completed"].includes(formatState(task.state)) && wallet.accounts.length > 0?<>
+            {task.amWorker ? <p>You are selected for round: {String(task.workerRound)}</p>: null}
           </>: null}
 
         </CardContent>

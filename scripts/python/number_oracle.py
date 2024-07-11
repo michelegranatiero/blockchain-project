@@ -18,7 +18,9 @@ event_filter = contract.events['NeedRandomness'].create_filter(fromBlock='latest
 
 accounts = w3.eth.accounts
 #the oracle address and the task admin address are the same
-my_address = accounts[len(accounts) - 1]
+# my_address = accounts[len(accounts) - 1]
+
+my_address = accounts[0]; # the first account is the oracle address
 
 print('Number oracle is ready to serve...\n')
 try:

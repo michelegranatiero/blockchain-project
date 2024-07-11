@@ -24,9 +24,11 @@ console.log(
 );
  */
 
+const oracleAddress = "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266" // Hardhat 1st account (index 0) 
+
 async function main() {
 
-  const FedMLContract = await hre.ethers.deployContract("FedMLContract");
+  const FedMLContract = await hre.ethers.deployContract("FedMLContract", [oracleAddress]);
 
   await FedMLContract.waitForDeployment();
 
