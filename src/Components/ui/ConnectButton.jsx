@@ -6,7 +6,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/Components/ui/dropdown-menu";
-import { Avatar, AvatarFallback, AvatarImage } from "@/Components/ui/avatar";
+import { useWeb3 } from "@/hooks/useWeb3";
 import { useMetaMask } from '@/hooks/useMetaMask'
 import  { formatAddress } from '@/utils/formatWeb3'
 import { Button } from "@/Components/ui/button";
@@ -14,9 +14,15 @@ import { Button } from "@/Components/ui/button";
 function ConnectButton({className=""}) {
 
   const { wallet, hasProvider, isConnecting, connectMetaMask, disconnectMetaMask } = useMetaMask()
+  const { setDefaultFilters } = useWeb3();
 
   function handleConnection() {
-    wallet.accounts.length < 1 ? connectMetaMask() : disconnectMetaMask();
+    wallet.accounts.length < 1 ? connectMetaMask() : disconnect();
+  }
+
+  function disconnect(){
+    setDefaultFilters();
+    disconnectMetaMask();
   }
 
   return (

@@ -562,7 +562,11 @@ export const Web3ContextProvider = ({children}) => {
     }
   }
 
-  const [filters, setFilters] = useState(["deployed", "started", "completed"]); // global tasks filters
+  const defaultFilters = ["deployed", "started", "completed"];
+  const [filters, setFilters] = useState(defaultFilters); // global tasks filters
+  function setDefaultFilters(){
+    setFilters(defaultFilters);
+  }
 
   return (
     <Web3Context.Provider
@@ -571,6 +575,7 @@ export const Web3ContextProvider = ({children}) => {
         web3,
         contract,
         globFilters: [filters, setFilters],
+        setDefaultFilters,
         createTask,
         getTask,
         getAllTasks,

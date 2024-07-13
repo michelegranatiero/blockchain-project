@@ -30,7 +30,7 @@ function TaskCard({ forceUpd, task}) {
       hover:ring-2 focus:ring-2 cursor-pointer ">
         <Card onClick={(e) => navigateStopPropagation(e, `/tasks/${task.id}`)}
           className="flex flex-col rounded-lg border-2
-          sm:h-64 sm:flex-row sm:items-center sm:justify-between overflow-hidden max-h-[25rem]">
+          sm:h-64 sm:flex-row sm:items-center sm:justify-between overflow-hidden max-h-[30rem]">
           <div className="flex h-full flex-col overflow-hidden grow">
             <CardHeader className="sm:pr-0">
               <div className="flex gap-2 items-center">
@@ -49,7 +49,7 @@ function TaskCard({ forceUpd, task}) {
             <CardFooter className="sm:pr-0 pb-0 sm:pb-6">
               <div className="flex flex-wrap gap-2 w-full justify-between">
                   <div className="flex flex-nowrap items-center text-sm text-muted-foreground">
-                    State:&nbsp;<Badge>{capitalizeFirstChar(formatState(task.state))}</Badge>
+                    <span>State:&nbsp;</span><Badge>{capitalizeFirstChar(formatState(task.state))}</Badge>
                   </div>
                   <div className="flex flex-nowrap gap-2">
                     {task.amAdmin ? <Badge variant="secondary"> Admin </Badge> : null}
@@ -60,7 +60,7 @@ function TaskCard({ forceUpd, task}) {
             </CardFooter>
           </div>
           
-          <div className="flex flex-wrap sm:flex-nowrap justify-around gap-3 p-6 sm:flex-col sm:justify-center sm:h-full sm:w-40">
+          <div className="flex flex-wrap sm:flex-nowrap justify-around gap-3 p-6 flex-col sm:justify-center sm:h-full sm:w-40">
           <TaskButtons task={task} setForceUpdate={setForceUpdate}/>
           </div>
         </Card>

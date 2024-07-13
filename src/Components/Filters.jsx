@@ -19,7 +19,7 @@ function Filters({ className = "" }) {
 
   return (
     <ToggleGroup
-      type="multiple" variant="outline" defaultValue={filters}
+      type="multiple" variant="outline" value={filters}
       onValueChange={(value) => setFilters(value)}
       className={`flex-col items-start justify-start self-stretch ${className}`}>
       <div className="px-4 md:hidden">

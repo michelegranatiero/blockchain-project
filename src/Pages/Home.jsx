@@ -55,11 +55,19 @@ function Home() {
 
 
   function filterFunction(task) {
+    const formattedState = formatState(Number(task.state)).toLowerCase();
+    const roleFilters = ["admin", "funder", "worker"];
+    
+    // Check if any of the roleFilters are included in filters
+    const includesAnyRole = roleFilters.some(role => filters.includes(role));
+    
     return (
-      filters.includes(formatState(Number(task.state)).toLowerCase()) ||
-      (filters.includes("admin") && task.amAdmin) ||
-      (filters.includes("funder") && task.amFunder) ||
-      (filters.includes("worker") && task.amWorker)
+      filters.includes(formattedState) && (
+        (filters.includes("admin") && task.amAdmin) ||
+        (filters.includes("funder") && task.amFunder) ||
+        (filters.includes("worker") && task.amWorker) || 
+        !includesAnyRole
+      )
     );
   }
 

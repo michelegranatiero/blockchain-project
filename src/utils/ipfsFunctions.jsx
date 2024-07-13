@@ -34,7 +34,8 @@ export const sendToIPFS = async (fileObj, name) => {
 // Download JSON file from IPFS
 export const fetchFromIPFS = async (cid) => {
   try {
-    const response = await fetch(`https://ipfs.io/ipfs/${cid}`, { // https://gateway.pinata.cloud/ipfs/ doesn't work outside of localhost
+    const response = await fetch(`https://gateway.pinata.cloud/ipfs/${cid}`, { // doesn't work outside of localhost
+    //const response = await fetch(`https://ipfs.io/ipfs/${cid}`, {
       method: 'GET',
     });
     
