@@ -68,7 +68,7 @@ function FundTaskModal({ className = "", disabledState = false, taskId, forceUpd
     const res = await fund( taskId, gweiToWei(values.amount));
     if (res) {
       setOpen(false);
-      alert("Task funded successfully");
+      console.log("Task funded successfully");
       //window.location.reload();
       forceUpdate((k) => k + 1);
     }else alert("Funding canceled or denied.");

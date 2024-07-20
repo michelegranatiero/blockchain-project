@@ -50,9 +50,10 @@ function Task() {
   }, [contract, wallet, forceUpdate]);
 
   // EVENTS
+  const taskEvents = ["Registered", "NewFunding", "StopFunding", "NeedRandomness", "RoundStarted", "TaskEnded"];
   useEffect(() => {
     if (!contract) return;
-    const cleanUpFunct = setTaskEvents(id, setForceUpdate);
+    const cleanUpFunct = setEvents(taskEvents, setForceUpdate, {taskId: id});
     
     if (cleanUpFunct) return () => cleanUpFunct();
   }, [contract, wallet]);

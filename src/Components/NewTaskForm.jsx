@@ -76,7 +76,7 @@ function NewTaskForm({setOpenState, forceUpdate}) {
     );
     if (response){
       setOpenState(false);
-      alert("Task created successfully");
+      console.log("Task created successfully");
       //window.location.reload();
       forceUpdate((k) => k + 1);
     } 

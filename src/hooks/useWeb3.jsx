@@ -27,9 +27,9 @@ export const Web3ContextProvider = ({children}) => {
   
 
   // EVENTS
-  const setHomeEvents = (setUpdate) => {
+  const setEvents = (eventsList, setUpdate, filters={}) => {
     if (!contract) return;
-  
+
     const deployedEmitter = contract.events.Deployed();
     deployedEmitter.on('data', (eventData) => {
       console.log("Event data: ", eventData);
@@ -206,15 +206,12 @@ export const Web3ContextProvider = ({children}) => {
     }
     try {
       const task = await contract.methods.getTask(taskId).call();
-      
-      
 
       if (wallet.accounts.length > 0) {
         let roles = await getRoles(task.id);
         task.amFunder = roles.isFunder;
         task.amWorker = roles.isWorker;
         task.amAdmin = roles.isAdmin;
-        // check if task started
         
         if (formatState(task.state) == "started" || formatState(task.state) == "completed"){
           task.hasCommitted = task.rounds.length > 0 ? await hasCommitted(task.id, wallet.accounts[0]) : true;
@@ -237,6 +234,15 @@ export const Web3ContextProvider = ({children}) => {
 
         
       }
+
+      if (["started", "completed"].includes(formatState(task.state))) {
+        //2 rounds before current round
+        if (formatState(task.state) == "completed"){
+          task.roundRanking = await getRoundRanking(task, task.rounds.length-1); // latest round ranking
+        }else{
+          task.roundRanking = task.rounds.length > 2 ? await getRoundRanking(task, task.rounds.length-2) : false;
+        }
+      } 
 
       // task advanced details (to be used on SINGLE TASK page)
       if (details){
@@ -399,6 +405,7 @@ export const Web3ContextProvider = ({children}) => {
   }
 
   const commitWork = async (task, workFile, votesFile) => {
+
     if (!contract) {
       console.error("Contract instance is not available.");
       return false;
@@ -414,7 +421,7 @@ export const Web3ContextProvider = ({children}) => {
         //handle json file
         const previousRoundWorkers = [];
         
-        for (let i = 0; i < Number(task.workersPerRound); i++) {
+        for (let i = 0; i < task.workersPerRound; i++) {
           previousRoundWorkers.push(task.registeredWorkers[(Number(task.workersPerRound)*(task.rounds.length-2)) + i]);
         }
 
@@ -596,8 +603,7 @@ export const Web3ContextProvider = ({children}) => {
         fetchFromIPFS,
         downloadFile,
         // events
-        setHomeEvents,
-        setTaskEvents,
+        setEvents
       }}
     >
       {children}

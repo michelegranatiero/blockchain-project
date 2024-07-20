@@ -27,7 +27,7 @@ function StopFundingModal({ className = "", disabledState = false, taskId, force
     const res = await stopFunding(taskId);
     if (res) {
       setOpen(false);
-      alert("Transaction successful");
+      console.log("Transaction successful");
       //window.location.reload();
       forceUpdate((k) => k + 1);
     }else alert("Transaction canceled or denied.");

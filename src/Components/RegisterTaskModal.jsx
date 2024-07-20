@@ -28,7 +28,7 @@ function RegisterTaskModal({ className = "", disabledState = false, taskId, entr
     const res = await register(taskId, entranceFee);
     if (res) {
       setOpen(false);
-      alert("Registered successfully");
+      console.log("Registered successfully");
       //window.location.reload();
       forceUpdate((k) => k + 1);
     }else alert("Registration canceled or denied.");

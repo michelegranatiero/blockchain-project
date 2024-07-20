@@ -55,6 +55,10 @@ function CommitWorkModal({ className = "", disabledState = false, task, forceUpd
 
   const form = useForm({
     resolver: zodResolver(commitSchema),
+    defaultValues: {
+      votesFile: "",
+      commitFile: "",
+    },
   });
 
   const [open, setOpen] = useState(false);
@@ -76,7 +80,7 @@ function CommitWorkModal({ className = "", disabledState = false, task, forceUpd
     const res = await commitWork( task, work, votes);
     if (res) {
       setOpen(false);
-      alert("Transaction successful");
+      console.log("Transaction successful");
       //window.location.reload();
       forceUpdate((k) => k + 1);
     }else alert("Transaction canceled or denied.\n\nCheck if your \"votes\" file contains all and only the correct addresses for the previous round workers.");
@@ -146,11 +150,7 @@ function CommitWorkModal({ className = "", disabledState = false, task, forceUpd
             </Button>
             : <Button type="submit">Commit</Button>
             }
-            
           </DialogFooter>
-            
-          {/* </div> */}
-
         </form>
         </Form>
         

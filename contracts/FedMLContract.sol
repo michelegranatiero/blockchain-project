@@ -81,6 +81,44 @@ contract FedMLContract {
 
     uint public taskCounter = 0;
     mapping (uint taskId => Task task) taskList;
+ 
+    mapping (uint taskId => EnumerableMap.AddressToUintMap funderMap) taskFundersMap;
+    mapping (address => uint) pendingRewards; //rewards assigned to workers
+
+    modifier validTask(uint _taskId) {
+        require(_taskId < taskCounter);
+        _;
+    }
+
+    modifier onlyOwner() {
+        require(msg.sender == owner);
+        _;
+    }
+
+    function setOracle(address _oracle) onlyOwner external {
+        oracle = _oracle;
+    }
+
+    function abort(uint _taskId) internal {
+        Task storage task = taskList[_taskId];
+        task.state = State.ABORTED;
+    }
+
+    function terminate() onlyOwner external {
+        selfdestruct(owner); // it's deprecated
+    }
+
+    function withdrawAll() onlyOwner external payable {
+        // only the owner can invoke this function
+        owner.transfer(address(this).balance);
+    }
+
+    function withdrawReward() external payable {
+        uint amount = pendingRewards[msg.sender];
+        // what if amount is null ???
+        pendingRewards[msg.sender] = 0;
+        payable(msg.sender).transfer(amount);
+    }
 
     ///@notice It allows for the deployement of a new task
     function deployTask(

@@ -8,7 +8,7 @@ import  { formatState } from '@/utils/formatWeb3'
 
 function Home() {
 
-  const {wallet, contract, getAllTasks, globFilters, setHomeEvents } = useWeb3();
+  const {wallet, contract, getAllTasks, globFilters, setEvents } = useWeb3();
 
   const [filters, setFilters] = globFilters;
 
@@ -38,9 +38,10 @@ function Home() {
   }, [contract, wallet, forceUpdate]);
 
   // EVENTS
+  const homeEvents = ["Deployed", "Registered", "StopFunding", "NeedRandomness", "RoundStarted", "TaskEnded"];
   useEffect(() => {
     if (!contract) return;
-    const cleanUpFunct = setHomeEvents(setForceUpdate);
+    const cleanUpFunct = setEvents(homeEvents, setForceUpdate);
     
     if (cleanUpFunct) return () => cleanUpFunct();
   }, [contract, wallet]);
