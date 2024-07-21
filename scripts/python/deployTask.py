@@ -14,7 +14,7 @@ contract_address = Web3.to_checksum_address('0x5fbdb2315678afecb367f032d93f642f6
 contract = w3.eth.contract(address=contract_address, abi=abi)
 
 accounts = w3.eth.accounts
-my_address = accounts[-1]
+my_address = accounts[50]
 
 cid = 'QmPP8kQvfs7fbg6kTjfUdJ4rvLiRbLXGzgcHNBQAPPGtNv'
 part1, part2 = utils.encode_CID_to_2_bytes_32(cid)
