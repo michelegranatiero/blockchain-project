@@ -11,7 +11,7 @@ mechanism based on the proof-of-stake upon which the Ethereum environment relies
 
 Different workers with different datasets will participate in the training, which will be coordinated by a smart contract deployed on an Ethereum blockchain.
 
-For further details check the <a href="https://github.com/michelegranatiero/blockchain-project/Report.pdf" >Report</a>.
+For further details check the <a href="https://github.com/michelegranatiero/blockchain-project/blob/main/Report.pdf" >Report</a>.
 
 ------
 USAGE:
@@ -39,4 +39,4 @@ IMPORTANT: This project uses IPFS from Pinata. To correctly create and visualize
 
 ------
 
-<img src="https://github.com/michelegranatiero/blockchain-project/frontend-images/home-light.png" width=800>
+<img src="https://github.com/michelegranatiero/blockchain-project/blob/main/frontend-images/public/home-light.png" width=800>
