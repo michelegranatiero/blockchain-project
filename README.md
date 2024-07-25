@@ -40,3 +40,7 @@ IMPORTANT: This project uses IPFS from Pinata. To correctly create and visualize
 ------
 
 <img src="https://github.com/michelegranatiero/blockchain-project/blob/main/public/frontend-images/home-light.png" width=800>
+<img src="https://github.com/michelegranatiero/blockchain-project/blob/main/public/frontend-images/home-dark.png" width=800>
+<img src="https://github.com/michelegranatiero/blockchain-project/blob/main/public/frontend-images/task-dep-light.png" width=800>
+<img src="https://github.com/michelegranatiero/blockchain-project/blob/main/public/frontend-images/newTask-light.png" width=800>
+<img src="https://github.com/michelegranatiero/blockchain-project/blob/main/public/frontend-images/task-lastRound-dark.png" width=800>
