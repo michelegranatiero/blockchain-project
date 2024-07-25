@@ -39,4 +39,4 @@ IMPORTANT: This project uses IPFS from Pinata. To correctly create and visualize
 
 ------
 
-<img src="https://github.com/michelegranatiero/blockchain-project/blob/main/frontend-images/public/home-light.png" width=800>
+<img src="https://github.com/michelegranatiero/blockchain-project/blob/main/public/frontend-images/home-light.png" width=800>
