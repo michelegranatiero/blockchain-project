@@ -1,4 +1,8 @@
-# Fall 2023 blockchain project: decentralized machine learning
+# FedEthML
+
+### Blockchain project: decentralized machine learning - Sapienza University of Rome
+
+
 
 This is the project for the fall 2023 blockchain exam at Università di Roma - La Sapienza.
 
