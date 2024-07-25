@@ -13,8 +13,6 @@ export const sendToIPFS = async (fileObj, name) => {
       headers: { Authorization: `Bearer ${import.meta.env.VITE_PINATA_JWT}`, "Content-Type": "application/json" },
       body: dataJson,
     };
-
-    console.log(import.meta.env);
     
     // Send file to IPFS
     const res = await fetch("https://api.pinata.cloud/pinning/pinJSONToIPFS", options);
