@@ -1,10 +1,6 @@
 # FedEthML
 
-### Blockchain project: decentralized machine learning - Sapienza University of Rome
-
-
-
-This is the project for the fall 2023 blockchain exam at Università di Roma - La Sapienza.
+### Blockchain project - Sapienza University of Rome
 
 Our Dapp, FedEthML, shows how the blockchain technology can be adopted to address
 two of the main issues of Federated Learning. The first is centralization: the central
